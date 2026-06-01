@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroGestión v3 — CTG · CPE · Métricas</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#efefeb;
+  --txt:#1a1a18;--txt2:#666662;--txt3:#999994;
+  --brd:#e0e0da;--brd2:#c0c0ba;
+  --verde:#1D9E75;--vd:#0F6E56;--vcl:#e8f5ee;
+  --azul:#185FA5;--acl:#E6F1FB;
+  --amb:#BA7517;--amcl:#FAEEDA;
+  --rojo:#A32D2D;--rcl:#FCEBEB;--rbrd:#E24B4A;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{--bg:#1e1e1c;--bg2:#2a2a28;--bg3:#141412;--txt:#f0f0ec;--txt2:#a0a09c;--txt3:#666660;--brd:#3a3a36;--brd2:#555550}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--txt);font-size:14px;line-height:1.5}
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+.sidebar{background:var(--bg);border-right:1px solid var(--brd);display:flex;flex-direction:column}
+.logo{padding:20px 16px 16px;border-bottom:1px solid var(--brd)}
+.logo i{font-size:26px;color:var(--verde)}
+.logo-title{font-size:15px;font-weight:600;margin-top:4px}
+.logo-sub{font-size:11px;color:var(--txt2)}
+.nav-sec{font-size:10px;font-weight:600;color:var(--txt3);padding:14px 16px 4px;text-transform:uppercase;letter-spacing:.06em}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;color:var(--txt2);font-size:13px;border-left:2px solid transparent;transition:all .15s;user-select:none}
+.nav-item:hover{background:var(--bg2);color:var(--txt)}
+.nav-item.active{background:var(--vcl);color:var(--vd);border-left-color:var(--verde);font-weight:500}
+.nav-item i{font-size:17px}
+.main{display:flex;flex-direction:column;overflow:auto}
+.topbar{background:var(--bg);border-bottom:1px solid var(--brd);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar-title{font-size:16px;font-weight:600}
+.topbar-actions{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);border:1px solid var(--brd);background:var(--bg);color:var(--txt);font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn:hover{background:var(--bg2);border-color:var(--brd2)}
+.btn-primary{background:var(--verde);border-color:var(--verde);color:#fff}
+.btn-primary:hover{background:var(--vd);border-color:var(--vd)}
+.btn-danger{background:var(--rbrd);border-color:var(--rbrd);color:#fff}
+.btn-danger:hover{background:var(--rojo);border-color:var(--rojo)}
+.btn-blue{background:var(--azul);border-color:var(--azul);color:#fff}
+.btn-blue:hover{background:#0C447C;border-color:#0C447C}
+.btn-sm{padding:5px 10px;font-size:12px}
+.content{padding:20px;flex:1}
+.panel{display:none}
+.panel.active{display:block}
+/* Metric cards */
+.cards-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.mc{background:var(--bg2);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden}
+.mc-label{font-size:12px;color:var(--txt2);margin-bottom:6px}
+.mc-val{font-size:24px;font-weight:600}
+.mc-sub{font-size:11px;color:var(--txt2);margin-top:3px}
+.mc-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:36px;opacity:.08}
+/* Charts row */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:var(--bg);border:1px solid var(--brd);border-radius:var(--rl);padding:16px}
+.chart-title{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--txt)}
+/* Sección card */
+.sc{background:var(--bg);border:1px solid var(--brd);border-radius:var(--rl);overflow:hidden;margin-bottom:16px}
+.sc-hdr{padding:13px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.sc-title{font-size:14px;font-weight:600}
+.filters{padding:12px 16px;border-bottom:1px solid var(--brd);display:flex;gap:8px;flex-wrap:wrap;background:var(--bg2)}
+input,select,textarea{font-size:13px;padding:7px 10px;border-radius:var(--r);border:1px solid var(--brd);background:var(--bg);color:var(--txt);outline:none;font-family:inherit;transition:border .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--verde)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:10px 12px;text-align:left;font-weight:500;color:var(--txt2);font-size:12px;border-bottom:1px solid var(--brd);background:var(--bg2);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--brd);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500}
+.bg-green{background:#EAF3DE;color:#3B6D11}.bg-blue{background:#E6F1FB;color:#185FA5}
+.bg-amb{background:#FAEEDA;color:#854F0B}.bg-red{background:var(--rcl);color:var(--rojo)}
+.bg-gray{background:#F1EFE8;color:#5F5E5A}.bg-purp{background:#EEEDFE;color:#3C3489}
+.tp{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:12px;color:var(--txt2);font-weight:500}
+.fl .req{color:var(--rbrd)}
+.fgrid{display:grid;gap:12px;padding:16px}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.sdiv{padding:9px 16px;font-size:11px;font-weight:600;color:var(--vd);text-transform:uppercase;letter-spacing:.06em;background:var(--bg2);border-top:1px solid var(--brd);border-bottom:1px solid var(--brd)}
+.fftr{padding:13px 16px;border-top:1px solid var(--brd);display:flex;justify-content:flex-end;gap:8px;background:var(--bg2)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg);border-radius:var(--rl);border:1px solid var(--brd);padding:24px;width:460px;max-width:95vw}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--txt2);margin-bottom:18px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--verde);color:#fff;padding:11px 18px;border-radius:var(--r);font-size:13px;z-index:200;display:none;align-items:center;gap:8px}
+.toast.show{display:flex}.toast.err{background:var(--rbrd)}
+.cb{width:15px;height:15px;cursor:pointer;accent-color:var(--verde)}
+.row-sel td{background:rgba(234,243,222,.4)!important}
+.abar{padding:10px 16px;background:var(--amcl);border-bottom:1px solid var(--brd);display:none;align-items:center;justify-content:space-between;font-size:13px;color:var(--amb)}
+.abar.vis{display:flex}
+.link-btn{color:var(--azul);cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:3px;background:none;border:none;font-family:inherit}
+.link-btn:hover{text-decoration:underline}
+.ibox{padding:12px;background:var(--bg2);border-radius:var(--r);font-size:12px;color:var(--txt2);border-left:3px solid var(--verde)}
+.hftr{padding:10px 16px;border-top:1px solid var(--brd);font-size:12px;color:var(--txt2);background:var(--bg2)}
+.stat-mini{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt2)}
+.stat-mini span{font-weight:600;color:var(--txt)}
+.confirm-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:var(--r);border:1px solid var(--verde);color:var(--verde);background:transparent;cursor:pointer;font-size:11px;font-family:inherit;transition:all .15s}
+.confirm-btn:hover{background:var(--vcl)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">
+      <div><i class="ti ti-plant-2"></i></div>
+      <div class="logo-title">AgroGestión v3</div>
+      <div class="logo-sub">CTG · CPE · Métricas</div>
+    </div>
+    <div class="nav-sec">Principal</div>
+    <div class="nav-item active" onclick="showPanel('dashboard',this)"><i class="ti ti-dashboard"></i> Dashboard</div>
+    <div class="nav-item" onclick="showPanel('metricas',this)"><i class="ti ti-chart-bar"></i> Métricas</div>
+    <div class="nav-sec">Documentos</div>
+    <div class="nav-item" onclick="showPanel('nueva-ctg',this)"><i class="ti ti-file-plus"></i> Nueva CTG</div>
+    <div class="nav-item" onclick="showPanel('nueva-cpe',this)"><i class="ti ti-file-certificate"></i> Nueva CPE</div>
+    <div class="nav-item" onclick="showPanel('historial',this)"><i class="ti ti-history"></i> Historial</div>
+    <div class="nav-sec">Sistema</div>
+    <div class="nav-item" onclick="showPanel('config',this)"><i class="ti ti-settings"></i> Configuración</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-actions">
+        <button class="btn" onclick="showPanel('nueva-ctg',document.querySelectorAll('.nav-item')[3])"><i class="ti ti-plus"></i> CTG</button>
+        <button class="btn btn-primary" onclick="showPanel('nueva-cpe',document.querySelectorAll('.nav-item')[4])"><i class="ti ti-plus"></i> CPE</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="cards-row">
+          <div class="mc"><div class="mc-label">CTG activos</div><div class="mc-val" style="color:var(--verde)" id="m-ctg">0</div><div class="mc-sub">en curso</div><i class="ti ti-file-certificate mc-icon"></i></div>
+          <div class="mc"><div class="mc-label">CPE emitidas</div><div class="mc-val" style="color:var(--azul)" id="m-cpe">0</div><div class="mc-sub">total</div><i class="ti ti-file-description mc-icon"></i></div>
+          <div class="mc"><div class="mc-label">Toneladas netas</div><div class="mc-val" id="m-ton">0</div><div class="mc-sub">acumuladas</div><i class="ti ti-weight mc-icon"></i></div>
+          <div class="mc"><div class="mc-label">Pendientes</div><div class="mc-val" style="color:var(--amb)" id="m-pend">0</div><div class="mc-sub">por confirmar</div><i class="ti ti-clock mc-icon"></i></div>
+        </div>
+        <div class="sc">
+          <div class="sc-hdr"><span class="sc-title">Últimos movimientos</span>
+            <button class="btn btn-sm" onclick="showPanel('historial',document.querySelectorAll('.nav-item')[5])"><i class="ti ti-arrow-right"></i> Ver todos</button>
+          </div>
+          <table>
+            <thead><tr><th>Tipo</th><th>Número</th><th>Especie</th><th>Remitente</th><th>Peso neto</th><th>Estado</th><th>Vigencia</th><th></th></tr></thead>
+            <tbody id="dash-tabla"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MÉTRICAS -->
+      <div class="panel" id="panel-metricas">
+        <div class="cards-row">
+          <div class="mc"><div class="mc-label">Total documentos</div><div class="mc-val" id="mm-total">0</div><div class="mc-sub">CTG + CPE</div></div>
+          <div class="mc"><div class="mc-label">Confirmados</div><div class="mc-val" style="color:var(--azul)" id="mm-conf">0</div><div class="mc-sub">con arribo</div></div>
+          <div class="mc"><div class="mc-label">Tn totales</div><div class="mc-val" id="mm-tn">0</div><div class="mc-sub">todas las especies</div></div>
+          <div class="mc"><div class="mc-label">Tasa confirmación</div><div class="mc-val" id="mm-tasa">0%</div><div class="mc-sub">del total</div></div>
+        </div>
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-title"><i class="ti ti-chart-donut" style="color:var(--verde)"></i> Toneladas por especie</div>
+            <canvas id="chart-especie" height="200"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title"><i class="ti ti-chart-bar" style="color:var(--azul)"></i> Documentos por estado</div>
+            <canvas id="chart-estado" height="200"></canvas>
+          </div>
+        </div>
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-title"><i class="ti ti-chart-line" style="color:var(--amb)"></i> Toneladas por mes (2025)</div>
+            <canvas id="chart-mes" height="180"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title"><i class="ti ti-chart-pie" style="color:var(--rojo)"></i> CTG vs CPE</div>
+            <canvas id="chart-tipo" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- NUEVA CTG -->
+      <div class="panel" id="panel-nueva-ctg">
+        <div class="sc">
+          <div class="sc-hdr"><span class="sc-title"><i class="ti ti-file-certificate" style="color:var(--verde)"></i> Solicitar CTG — Código de Trazabilidad de Granos</span></div>
+          <div class="sdiv">Datos del grano</div>
+          <div class="fgrid">
+            <div class="fr3">
+              <div class="fg"><label class="fl">Especie <span class="req">*</span></label><select id="ctg-esp"><option>Soja</option><option>Maíz</option><option>Trigo</option><option>Girasol</option><option>Cebada cervecera</option><option>Sorgo granífero</option><option>Maní</option></select></div>
+              <div class="fg"><label class="fl">Cosecha <span class="req">*</span></label><select id="ctg-cos"><option>2024/2025</option><option>2023/2024</option><option>2025/2026</option></select></div>
+              <div class="fg"><label class="fl">Grado</label><select id="ctg-grd"><option>Grado 1</option><option>Grado 2</option><option>Grado 3</option><option>Fuera de estándar</option></select></div>
+            </div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">Peso neto declarado (kg) <span class="req">*</span></label><input type="number" id="ctg-peso" placeholder="18500"></div>
+              <div class="fg"><label class="fl">Km a recorrer</label><input type="number" id="ctg-km" placeholder="320"></div>
+            </div>
+          </div>
+          <div class="sdiv">Origen y destino</div>
+          <div class="fgrid">
+            <div class="fr2">
+              <div class="fg"><label class="fl">CUIT remitente <span class="req">*</span></label><input type="text" id="ctg-crem" placeholder="30-71234567-0"></div>
+              <div class="fg"><label class="fl">CUIT destinatario <span class="req">*</span></label><input type="text" id="ctg-cdest" placeholder="30-65432100-9"></div>
+            </div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">Establecimiento</label><input type="text" id="ctg-estab" placeholder="Campo La Esperanza – Lote 14"></div>
+              <div class="fg"><label class="fl">Planta destino (N°)</label><input type="number" id="ctg-planta" placeholder="3"></div>
+            </div>
+            <div class="fg"><label class="fl">CUIT corredor (opcional)</label><input type="text" id="ctg-corr" placeholder="20-XXXXXXXX-X"></div>
+          </div>
+          <div class="sdiv">Transporte</div>
+          <div class="fgrid">
+            <div class="fr3">
+              <div class="fg"><label class="fl">Patente vehículo <span class="req">*</span></label><input type="text" id="ctg-pat" placeholder="AB123CD" oninput="this.value=this.value.toUpperCase()"></div>
+              <div class="fg"><label class="fl">CUIT transportista</label><input type="text" id="ctg-ctrans" placeholder="20-28765432-1"></div>
+              <div class="fg"><label class="fl">Código CTG ARCA (si ya existe)</label><input type="text" id="ctg-num-arca" placeholder="Dejar vacío si es nuevo"></div>
+            </div>
+          </div>
+          <div class="fftr">
+            <button class="btn" onclick="limpiar('ctg')"><i class="ti ti-eraser"></i> Limpiar</button>
+            <button class="btn btn-primary" onclick="guardarCTG()"><i class="ti ti-send"></i> Registrar CTG</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NUEVA CPE -->
+      <div class="panel" id="panel-nueva-cpe">
+        <div class="sc">
+          <div class="sc-hdr"><span class="sc-title"><i class="ti ti-file-description" style="color:var(--azul)"></i> Emitir Carta de Porte Electrónica — RG 5017/2021</span></div>
+          <div class="sdiv">Datos del grano</div>
+          <div class="fgrid">
+            <div class="fr3">
+              <div class="fg"><label class="fl">Especie <span class="req">*</span></label><select id="cpe-esp"><option>Soja</option><option>Maíz</option><option>Trigo</option><option>Girasol</option><option>Cebada cervecera</option><option>Sorgo granífero</option><option>Maní</option></select></div>
+              <div class="fg"><label class="fl">Cosecha <span class="req">*</span></label><select id="cpe-cos"><option>2024/2025</option><option>2023/2024</option><option>2025/2026</option></select></div>
+              <div class="fg"><label class="fl">Tipo de grano</label><select id="cpe-tgr"><option>Nuevo</option><option>Deteriorado</option><option>Con descuento</option></select></div>
+            </div>
+          </div>
+          <div class="sdiv">Remitente</div>
+          <div class="fgrid">
+            <div class="fr2">
+              <div class="fg"><label class="fl">Razón social <span class="req">*</span></label><input type="text" id="cpe-rsrem" placeholder="AGROPECUARIA SAN CARLOS S.A."></div>
+              <div class="fg"><label class="fl">CUIT remitente <span class="req">*</span></label><input type="text" id="cpe-crem" placeholder="30-71234567-0"></div>
+            </div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">Localidad origen</label><input type="text" id="cpe-lorig" placeholder="Río Cuarto, Córdoba"></div>
+              <div class="fg"><label class="fl">Establecimiento</label><input type="text" id="cpe-estab" placeholder="Campo La Esperanza – Lote 14"></div>
+            </div>
+          </div>
+          <div class="sdiv">Destinatario</div>
+          <div class="fgrid">
+            <div class="fr2">
+              <div class="fg"><label class="fl">Razón social <span class="req">*</span></label><input type="text" id="cpe-rsdest" placeholder="ACEITERA DEL LITORAL S.A."></div>
+              <div class="fg"><label class="fl">CUIT destinatario <span class="req">*</span></label><input type="text" id="cpe-cdest" placeholder="30-65432100-9"></div>
+            </div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">Localidad destino</label><input type="text" id="cpe-ldest" placeholder="San Lorenzo, Santa Fe"></div>
+              <div class="fg"><label class="fl">Planta destino (N°)</label><input type="number" id="cpe-planta" placeholder="3"></div>
+            </div>
+          </div>
+          <div class="sdiv">Transporte</div>
+          <div class="fgrid">
+            <div class="fr3">
+              <div class="fg"><label class="fl">CUIT transportista <span class="req">*</span></label><input type="text" id="cpe-ctrans" placeholder="20-28765432-1"></div>
+              <div class="fg"><label class="fl">Dominio vehículo <span class="req">*</span></label><input type="text" id="cpe-dom" placeholder="AB123CD" oninput="this.value=this.value.toUpperCase()"></div>
+              <div class="fg"><label class="fl">Dominio acoplado</label><input type="text" id="cpe-acop" placeholder="EF456GH" oninput="this.value=this.value.toUpperCase()"></div>
+            </div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">Fecha de partida</label><input type="date" id="cpe-fpart"></div>
+              <div class="fg"><label class="fl">Km a recorrer</label><input type="number" id="cpe-km" placeholder="320"></div>
+            </div>
+            <div class="fg"><label class="fl">CTG asociado (número)</label><input type="text" id="cpe-ctg" placeholder="42987654 — dejar vacío si no aplica"></div>
+          </div>
+          <div class="sdiv">Cadena comercial (opcional)</div>
+          <div class="fgrid">
+            <div style="font-size:11px;color:var(--txt2);margin-bottom:4px;padding:0">Completar solo si el traslado involucra ventas primarias o secundarias con corredores intermediarios (RG 5017/2021)</div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">CUIT remitente comercial (venta primaria)</label><input type="text" id="cpe-rem-prim" placeholder="Primer comprador — ej. acopiador"></div>
+              <div class="fg"><label class="fl">CUIT corredor (venta primaria)</label><input type="text" id="cpe-corr-prim" placeholder="Corredor de la venta primaria"></div>
+            </div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">CUIT remitente comercial (venta secundaria 1)</label><input type="text" id="cpe-rem-sec1" placeholder="Segundo comprador — ej. acopiador B"></div>
+              <div class="fg"><label class="fl">CUIT remitente comercial (venta secundaria 2)</label><input type="text" id="cpe-rem-sec2" placeholder="Tercer comprador — ej. canjeador"></div>
+            </div>
+            <div class="fg"><label class="fl">CUIT corredor (venta secundaria)</label><input type="text" id="cpe-corr-sec" placeholder="Corredor de la venta secundaria"></div>
+          </div>
+          <div class="sdiv">Pesos y calidad</div>
+          <div class="fgrid">
+            <div class="fr3">
+              <div class="fg"><label class="fl">Peso bruto declarado (kg) <span class="req">*</span></label><input type="number" id="cpe-bruto" placeholder="31500" oninput="calcNeto()"></div>
+              <div class="fg"><label class="fl">Tara (kg)</label><input type="number" id="cpe-tara" placeholder="13200" oninput="calcNeto()"></div>
+              <div class="fg"><label class="fl">Peso neto (kg)</label><input type="number" id="cpe-neto" placeholder="Auto" readonly style="color:var(--verde);font-weight:600"></div>
+            </div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">Humedad (%)</label><input type="number" step=".1" id="cpe-hum" placeholder="13.5"></div>
+              <div class="fg"><label class="fl">% Zaranda</label><input type="number" step=".1" id="cpe-zar" placeholder="0.8"></div>
+            </div>
+            <div class="fg"><label class="fl">Observaciones</label><textarea id="cpe-obs" rows="2" placeholder="Indicar si corresponde"></textarea></div>
+          </div>
+          <div class="fftr">
+            <button class="btn" onclick="limpiar('cpe')"><i class="ti ti-eraser"></i> Limpiar</button>
+            <button class="btn btn-primary" onclick="guardarCPE()"><i class="ti ti-send"></i> Emitir CPE</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORIAL -->
+      <div class="panel" id="panel-historial">
+        <div class="sc">
+          <div class="sc-hdr">
+            <span class="sc-title">Historial de documentos</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" onclick="exportXLSX()"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+              <button class="btn btn-sm" onclick="exportCSV()"><i class="ti ti-download"></i> CSV</button>
+            </div>
+          </div>
+          <div class="filters">
+            <select id="f-tipo" onchange="filtrar()" style="width:130px"><option value="">Todos los tipos</option><option value="CTG">CTG</option><option value="CPE">CPE</option></select>
+            <select id="f-est" onchange="filtrar()" style="width:140px"><option value="">Todos los estados</option><option>Pendiente</option><option>Activo</option><option>Confirmado</option><option>Activa</option><option>Confirmada</option><option>Anulado</option><option>Anulada</option><option>Vencido</option><option>Vencida</option></select>
+            <input type="text" id="f-esp" placeholder="Especie..." oninput="filtrar()" style="width:110px">
+            <input type="text" id="f-cuit" placeholder="CUIT..." oninput="filtrar()" style="width:150px">
+            <input type="date" id="f-desde" onchange="filtrar()">
+            <input type="date" id="f-hasta" onchange="filtrar()">
+            <button class="btn btn-sm" onclick="limpiarF()"><i class="ti ti-x"></i> Limpiar</button>
+          </div>
+          <div class="abar" id="abar">
+            <span id="abar-cnt"></span>
+            <button class="btn btn-danger btn-sm" onclick="abrirModalAnular()"><i class="ti ti-ban"></i> Anular seleccionados</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table id="hist-table">
+              <thead><tr>
+                <th><input type="checkbox" class="cb" id="cb-all" onchange="toggleTodos()"></th>
+                <th>Tipo</th><th>Número</th><th>Especie / Cosecha</th>
+                <th>Remitente</th><th>Peso neto</th><th>Estado</th><th>Vigencia</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="hist-tbody"></tbody>
+            </table>
+          </div>
+          <div id="hist-empty" class="empty" style="display:none;padding:32px;text-align:center;color:var(--txt2)"><i class="ti ti-inbox" style="font-size:28px;display:block;margin-bottom:8px;color:var(--txt3)"></i>Sin documentos con esos filtros</div>
+          <div class="hftr" id="hist-ftr"></div>
+        </div>
+      </div>
+
+      <!-- CONFIG -->
+      <div class="panel" id="panel-config">
+        <div class="sc">
+          <div class="sc-hdr"><span class="sc-title">Configuración</span></div>
+          <div class="sdiv">Remitente por defecto</div>
+          <div class="fgrid">
+            <div class="fr2">
+              <div class="fg"><label class="fl">Razón social</label><input type="text" id="cfg-rs" placeholder="Mi Empresa Agropecuaria S.A." oninput="saveConfig()"></div>
+              <div class="fg"><label class="fl">CUIT</label><input type="text" id="cfg-cuit" placeholder="30-71234567-0" oninput="saveConfig()"></div>
+            </div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">Localidad</label><input type="text" id="cfg-loc" placeholder="Río Cuarto, Córdoba" oninput="saveConfig()"></div>
+              <div class="fg"><label class="fl">Cosecha por defecto</label><select id="cfg-cos" onchange="saveConfig()"><option>2024/2025</option><option>2023/2024</option><option>2025/2026</option></select></div>
+            </div>
+          </div>
+          <div class="sdiv">Backend ARCA (producción)</div>
+          <div class="fgrid">
+            <div class="fr2">
+              <div class="fg"><label class="fl">URL API backend</label><input type="text" id="cfg-url" placeholder="https://tu-app.vercel.app/api/agro" oninput="saveConfig()"></div>
+              <div class="fg"><label class="fl">Ambiente</label><select id="cfg-env" onchange="saveConfig()"><option value="dev">Homologación</option><option value="prod">Producción</option></select></div>
+            </div>
+            <div class="fr2">
+              <div class="fg"><label class="fl">Email notificaciones (Resend)</label><input type="text" id="cfg-email" placeholder="agro@tuempresa.com.ar" oninput="saveConfig()"></div>
+              <div class="fg"><label class="fl">Documentos guardados</label><input type="text" id="cfg-ndocs" readonly></div>
+            </div>
+            <div class="ibox"><i class="ti ti-info-circle"></i> Esta interfaz funciona offline guardando en el navegador. Cuando conectes el backend Next.js de la Fase 2, los datos se sincronizarán con Supabase y ARCA automáticamente.</div>
+          </div>
+          <div class="fftr">
+            <button class="btn btn-danger btn-sm" onclick="if(confirm('¿Borrar todos los datos?')){docs=[];saveDocs();metricas();toast('Datos borrados')}"><i class="ti ti-trash"></i> Borrar datos</button>
+            <button class="btn btn-sm" onclick="backupJSON()"><i class="ti ti-download"></i> Backup JSON</button>
+            <button class="btn btn-primary" onclick="toast('Configuración guardada ✓')"><i class="ti ti-check"></i> Guardar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal anulación -->
+<div class="modal-bg" id="modal-anular">
+  <div class="modal">
+    <div class="modal-title">Anular documentos</div>
+    <div class="modal-sub" id="m-anular-sub"></div>
+    <div class="fg" style="margin-bottom:20px">
+      <label class="fl">Motivo <span class="req">*</span></label>
+      <textarea id="motivo" rows="3" placeholder="Ej: Error en datos de transporte. Patente incorrecta." style="width:100%;margin-top:6px"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modal-anular')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarAnulacion()"><i class="ti ti-ban"></i> Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmación arribo -->
+<div class="modal-bg" id="modal-confirmar">
+  <div class="modal">
+    <div class="modal-title">Confirmar arribo</div>
+    <div class="modal-sub" id="m-conf-sub"></div>
+    <div class="fg" style="margin-bottom:16px">
+      <label class="fl">Peso neto confirmado en destino (kg)</label>
+      <input type="number" id="peso-conf" placeholder="Dejar vacío si coincide con el declarado" style="width:100%;margin-top:6px">
+    </div>
+    <div class="fg" style="margin-bottom:20px">
+      <label class="fl">Observaciones en destino</label>
+      <textarea id="obs-conf" rows="2" placeholder="Opcional" style="width:100%;margin-top:6px"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modal-confirmar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarArribo()"><i class="ti ti-check"></i> Confirmar arribo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast-el"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<script>
+// ── Estado ───────────────────────────────────────────────────────
+let docs = JSON.parse(localStorage.getItem('agro-docs')||'[]')
+let sel = new Set()
+let docsV = []
+let docConfId = null
+let charts = {}
+
+function saveDocs(){localStorage.setItem('agro-docs',JSON.stringify(docs))}
+
+// ── Formato ──────────────────────────────────────────────────────
+const fmtKg = n => n||n===0 ? Number(n).toLocaleString('es-AR')+' kg' : '—'
+const fmtFecha = s => {if(!s)return'—';try{return new Date(s.slice(0,10)+'T00:00:00').toLocaleDateString('es-AR')}catch{return s}}
+const BEST = {Activo:'bg-green',Activa:'bg-green',Confirmado:'bg-blue',Confirmada:'bg-blue',
+  Anulado:'bg-red',Anulada:'bg-red',Pendiente:'bg-amb',Vencido:'bg-gray',Vencida:'bg-gray'}
+
+// ── Navegación ───────────────────────────────────────────────────
+const TITLES = {dashboard:'Dashboard',metricas:'Métricas','nueva-ctg':'Nueva CTG','nueva-cpe':'Nueva CPE',historial:'Historial',config:'Configuración'}
+function showPanel(id,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
+  document.getElementById('panel-'+id).classList.add('active')
+  if(el)el.classList.add('active')
+  document.getElementById('topbar-title').textContent=TITLES[id]||id
+  if(id==='historial'){docsV=[...docs];renderHist(docsV)}
+  if(id==='dashboard')renderDash()
+  if(id==='metricas')renderMetricas()
+  if(id==='config'){document.getElementById('cfg-ndocs').value=docs.length+' documentos';loadConfig()}
+}
+
+// ── Formularios ──────────────────────────────────────────────────
+function calcNeto(){
+  const b=parseFloat(document.getElementById('cpe-bruto').value)||0
+  const t=parseFloat(document.getElementById('cpe-tara').value)||0
+  document.getElementById('cpe-neto').value=b-t>0?b-t:''
+}
+
+function limpiar(tipo){
+  document.querySelectorAll('#panel-nueva-'+tipo+' input, #panel-nueva-'+tipo+' textarea')
+    .forEach(el=>{if(!el.readOnly)el.value=''})
+}
+
+function guardarCTG(){
+  const peso=document.getElementById('ctg-peso').value
+  const rem=document.getElementById('ctg-crem').value
+  const dest=document.getElementById('ctg-cdest').value
+  if(!peso||!rem||!dest){toast('Completá campos obligatorios','err');return}
+  const hoy=new Date().toISOString().slice(0,10)
+  const vig=new Date();vig.setDate(vig.getDate()+3)
+  const numArca=document.getElementById('ctg-num-arca').value.trim()
+  const num=numArca||('CTG'+Math.floor(Math.random()*90000000+10000000))
+  docs.unshift({id:Date.now().toString(),tipo:'CTG',numero:num,
+    especie:document.getElementById('ctg-esp').value,cosecha:document.getElementById('ctg-cos').value,
+    grado:document.getElementById('ctg-grd').value,estado:'Activo',
+    cuit_remitente:rem,cuit_destinatario:dest,
+    patente_vehiculo:document.getElementById('ctg-pat').value,
+    cuit_transportista:document.getElementById('ctg-ctrans').value,
+    establecimiento:document.getElementById('ctg-estab').value,
+    km_a_recorrer:document.getElementById('ctg-km').value,
+    peso_neto:parseInt(peso),fecha_emision:hoy,vigencia_hasta:vig.toISOString().slice(0,10)
+  })
+  saveDocs();metricas();toast('CTG registrada: '+num);limpiar('ctg')
+}
+
+function guardarCPE(){
+  const rsRem=document.getElementById('cpe-rsrem').value
+  const cRem=document.getElementById('cpe-crem').value
+  const cDest=document.getElementById('cpe-cdest').value
+  const bruto=document.getElementById('cpe-bruto').value
+  if(!rsRem||!cRem||!cDest||!bruto){toast('Completá campos obligatorios','err');return}
+  const b=parseInt(bruto)||0,t=parseInt(document.getElementById('cpe-tara').value)||0
+  const hoy=new Date().toISOString().slice(0,10)
+  const vig=new Date();vig.setDate(vig.getDate()+2)
+  const num='74'+String(Math.floor(Math.random()*9000000000+1000000000))
+  docs.unshift({id:Date.now().toString(),tipo:'CPE',numero:num,
+    especie:document.getElementById('cpe-esp').value,cosecha:document.getElementById('cpe-cos').value,
+    tipo_grano:document.getElementById('cpe-tgr').value,estado:'Activa',
+    razon_social_remitente:rsRem,cuit_remitente:cRem,
+    razon_social_destinatario:document.getElementById('cpe-rsdest').value,
+    cuit_destinatario:cDest,
+    localidad_productor:document.getElementById('cpe-lorig').value,
+    localidad_destino:document.getElementById('cpe-ldest').value,
+    planta_destino:document.getElementById('cpe-planta').value,
+    cuit_transportista:document.getElementById('cpe-ctrans').value,
+    dominio_vehiculo:document.getElementById('cpe-dom').value,
+    dominio_acoplado:document.getElementById('cpe-acop').value,
+    fecha_hora_partida:document.getElementById('cpe-fpart').value,
+    km_a_recorrer:document.getElementById('cpe-km').value,
+    numero_ctg:document.getElementById('cpe-ctg').value,
+    cuit_rem_comercial_primaria:document.getElementById('cpe-rem-prim').value,
+    cuit_corredor_venta_primaria:document.getElementById('cpe-corr-prim').value,
+    cuit_rem_comercial_secundaria1:document.getElementById('cpe-rem-sec1').value,
+    cuit_rem_comercial_secundaria2:document.getElementById('cpe-rem-sec2').value,
+    cuit_corredor_venta_secundaria:document.getElementById('cpe-corr-sec').value,
+    peso_bruto_declarado:b,peso_tara:t,peso_neto:b-t,
+    humedad:document.getElementById('cpe-hum').value,
+    porcentaje_zaranda:document.getElementById('cpe-zar').value,
+    observaciones:document.getElementById('cpe-obs').value,
+    establecimiento:document.getElementById('cpe-estab').value,
+    fecha_emision:hoy,vigencia_hasta:vig.toISOString().slice(0,10)
+  })
+  saveDocs();metricas();toast('CPE emitida: '+num);limpiar('cpe')
+}
+
+// ── Dashboard ────────────────────────────────────────────────────
+function renderDash(){
+  const tb=document.getElementById('dash-tabla')
+  const rec=docs.slice(0,8)
+  if(!rec.length){tb.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--txt2)">Sin documentos. Creá tu primera CTG o CPE.</td></tr>';return}
+  tb.innerHTML=rec.map(d=>`<tr>
+    <td><span class="tp ${d.tipo==='CTG'?'bg-purp':'bg-blue'}">${d.tipo}</span></td>
+    <td style="font-family:monospace;font-size:12px">${d.numero}</td>
+    <td style="font-weight:500">${d.especie}</td>
+    <td style="font-size:12px;color:var(--txt2)">${d.cuit_remitente||'—'}</td>
+    <td style="font-weight:500">${fmtKg(d.peso_neto)}</td>
+    <td><span class="badge ${BEST[d.estado]||'bg-gray'}">${d.estado}</span></td>
+    <td style="font-size:12px;color:var(--txt2)">${fmtFecha(d.vigencia_hasta)}</td>
+    <td>${['Activo','Activa','Pendiente'].includes(d.estado)?`<button class="confirm-btn" onclick="abrirModalConf('${d.id}')"><i class="ti ti-check"></i> Confirmar</button>`:'—'}</td>
+  </tr>`).join('')
+}
+
+// ── Métricas ─────────────────────────────────────────────────────
+function renderMetricas(){
+  const total=docs.length
+  const conf=docs.filter(d=>['Confirmado','Confirmada'].includes(d.estado)).length
+  const kg=docs.reduce((s,d)=>s+(d.peso_neto||0),0)
+  const tasa=total?Math.round(conf/total*100):0
+  document.getElementById('mm-total').textContent=total
+  document.getElementById('mm-conf').textContent=conf
+  document.getElementById('mm-tn').textContent=Math.round(kg/1000)
+  document.getElementById('mm-tasa').textContent=tasa+'%'
+  buildCharts()
+}
+
+function buildCharts(){
+  // Especie → kg
+  const por_esp = {}
+  docs.forEach(d=>{const e=d.especie||'?';por_esp[e]=(por_esp[e]||0)+(d.peso_neto||0)})
+  const esp_sorted = Object.entries(por_esp).sort((a,b)=>b[1]-a[1])
+  const C=['#1D9E75','#185FA5','#BA7517','#A32D2D','#3C3489','#0F6E56','#854F0B']
+
+  if(charts.especie)charts.especie.destroy()
+  charts.especie=new Chart(document.getElementById('chart-especie'),{
+    type:'doughnut',
+    data:{labels:esp_sorted.map(x=>x[0]),datasets:[{data:esp_sorted.map(x=>Math.round(x[1]/1000)),backgroundColor:C,borderWidth:0}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed+' tn'}}},cutout:'65%',responsive:true,maintainAspectRatio:true}
+  })
+
+  // Estado
+  const ESTADOS=['Activo','Activa','Confirmado','Confirmada','Pendiente','Anulado','Anulada','Vencido','Vencida']
+  const ECOLS={'Activo':'#1D9E75','Activa':'#1D9E75','Confirmado':'#185FA5','Confirmada':'#185FA5','Pendiente':'#BA7517','Anulado':'#A32D2D','Anulada':'#A32D2D','Vencido':'#888780','Vencida':'#888780'}
+  const cnt={}; docs.forEach(d=>{cnt[d.estado]=(cnt[d.estado]||0)+1})
+  const est_sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1])
+  if(charts.estado)charts.estado.destroy()
+  charts.estado=new Chart(document.getElementById('chart-estado'),{
+    type:'bar',
+    data:{labels:est_sorted.map(x=>x[0]),datasets:[{data:est_sorted.map(x=>x[1]),backgroundColor:est_sorted.map(x=>ECOLS[x[0]]||'#888'),borderRadius:4,borderSkipped:false}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{stepSize:1},grid:{color:'rgba(0,0,0,.05)'}},x:{grid:{display:false}}},responsive:true,maintainAspectRatio:true}
+  })
+
+  // Por mes
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  const por_mes=new Array(12).fill(0)
+  docs.forEach(d=>{
+    if(d.fecha_emision){
+      const m=parseInt(d.fecha_emision.slice(5,7))-1
+      if(m>=0&&m<12) por_mes[m]+=(d.peso_neto||0)/1000
+    }
+  })
+  if(charts.mes)charts.mes.destroy()
+  charts.mes=new Chart(document.getElementById('chart-mes'),{
+    type:'line',
+    data:{labels:meses,datasets:[{label:'Tn',data:por_mes.map(v=>Math.round(v)),borderColor:'#BA7517',backgroundColor:'rgba(186,117,23,.1)',fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#BA7517'}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+' tn'},grid:{color:'rgba(0,0,0,.05)'}},x:{grid:{display:false}}},responsive:true,maintainAspectRatio:true}
+  })
+
+  // CTG vs CPE
+  const nCtg=docs.filter(d=>d.tipo==='CTG').length
+  const nCpe=docs.filter(d=>d.tipo==='CPE').length
+  if(charts.tipo)charts.tipo.destroy()
+  charts.tipo=new Chart(document.getElementById('chart-tipo'),{
+    type:'pie',
+    data:{labels:['CTG','CPE'],datasets:[{data:[nCtg,nCpe],backgroundColor:['#EEEDFE','#E6F1FB'],borderColor:['#3C3489','#185FA5'],borderWidth:2}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:16}}},responsive:true,maintainAspectRatio:true}
+  })
+}
+
+// ── Historial ────────────────────────────────────────────────────
+function renderHist(data){
+  const tb=document.getElementById('hist-tbody')
+  const empty=document.getElementById('hist-empty')
+  const table=document.getElementById('hist-table')
+  const ftr=document.getElementById('hist-ftr')
+  if(!data.length){empty.style.display='block';table.style.display='none';ftr.textContent='';return}
+  table.style.display='table';empty.style.display='none'
+  tb.innerHTML=data.map(d=>`<tr class="${sel.has(d.id)?'row-sel':''}">
+    <td><input type="checkbox" class="cb" onchange="toggleSel('${d.id}',this)" ${sel.has(d.id)?'checked':''}></td>
+    <td><span class="tp ${d.tipo==='CTG'?'bg-purp':'bg-blue'}">${d.tipo}</span></td>
+    <td style="font-family:monospace;font-size:12px;white-space:nowrap">${d.numero}</td>
+    <td><span style="font-weight:500">${d.especie}</span> <span style="color:var(--txt2);font-size:12px">${d.cosecha}</span></td>
+    <td style="font-size:12px;color:var(--txt2)">${d.cuit_remitente||'—'}</td>
+    <td style="font-weight:500;white-space:nowrap">${fmtKg(d.peso_neto)}</td>
+    <td><span class="badge ${BEST[d.estado]||'bg-gray'}">${d.estado}</span></td>
+    <td style="font-size:12px;color:var(--txt2);white-space:nowrap">${fmtFecha(d.vigencia_hasta)}</td>
+    <td style="white-space:nowrap;display:flex;gap:4px">
+      ${['Activo','Activa','Pendiente'].includes(d.estado)?`<button class="confirm-btn" onclick="abrirModalConf('${d.id}')"><i class="ti ti-check"></i> Confirmar</button>`:''}
+    </td>
+  </tr>`).join('')
+  ftr.textContent=`${data.length} documento${data.length!==1?'s':''} encontrado${data.length!==1?'s':''}`
+  actualizarAbar()
+}
+
+function filtrar(){
+  const tipo=document.getElementById('f-tipo').value
+  const est=document.getElementById('f-est').value
+  const esp=document.getElementById('f-esp').value.toLowerCase()
+  const cuit=document.getElementById('f-cuit').value
+  const desde=document.getElementById('f-desde').value
+  const hasta=document.getElementById('f-hasta').value
+  docsV=docs.filter(d=>{
+    if(tipo&&d.tipo!==tipo)return false
+    if(est&&d.estado!==est)return false
+    if(esp&&!d.especie.toLowerCase().includes(esp))return false
+    if(cuit&&!d.cuit_remitente?.includes(cuit)&&!d.cuit_destinatario?.includes(cuit))return false
+    if(desde&&d.fecha_emision<desde)return false
+    if(hasta&&d.fecha_emision>hasta)return false
+    return true
+  })
+  sel.clear();renderHist(docsV)
+}
+
+function limpiarF(){
+  ['f-tipo','f-est','f-esp','f-cuit','f-desde','f-hasta'].forEach(id=>document.getElementById(id).value='')
+  sel.clear();docsV=[...docs];renderHist(docsV)
+}
+
+function toggleSel(id,cb){
+  cb.checked?sel.add(id):sel.delete(id)
+  cb.closest('tr').classList.toggle('row-sel',cb.checked)
+  actualizarAbar()
+  document.getElementById('cb-all').checked=sel.size===docsV.length&&docsV.length>0
+}
+function toggleTodos(){
+  const all=document.getElementById('cb-all')
+  if(all.checked)docsV.forEach(d=>sel.add(d.id))
+  else sel.clear()
+  renderHist(docsV)
+}
+function actualizarAbar(){
+  const bar=document.getElementById('abar')
+  document.getElementById('abar-cnt').textContent=`${sel.size} seleccionado${sel.size!==1?'s':''}`
+  sel.size>0?bar.classList.add('vis'):bar.classList.remove('vis')
+}
+
+// ── Confirmación de arribo ───────────────────────────────────────
+function abrirModalConf(id){
+  const d=docs.find(x=>x.id===id)
+  if(!d)return
+  docConfId=id
+  document.getElementById('m-conf-sub').textContent=`${d.tipo} N° ${d.numero} — ${d.especie} ${d.cosecha} — Peso declarado: ${fmtKg(d.peso_neto)}`
+  document.getElementById('peso-conf').value=''
+  document.getElementById('obs-conf').value=''
+  document.getElementById('modal-confirmar').classList.add('open')
+}
+
+function confirmarArribo(){
+  const d=docs.find(x=>x.id===docConfId)
+  if(!d)return
+  const pesoConf=document.getElementById('peso-conf').value
+  const obsConf=document.getElementById('obs-conf').value
+  d.estado=d.tipo==='CTG'?'Confirmado':'Confirmada'
+  if(pesoConf)d.peso_neto_confirmado=parseInt(pesoConf)
+  if(obsConf)d.observaciones_destino=obsConf
+  d.fecha_confirmacion=new Date().toISOString().slice(0,10)
+  saveDocs();metricas()
+  cerrarModal('modal-confirmar')
+  if(document.getElementById('panel-historial').classList.contains('active')){docsV=[...docs];renderHist(docsV)}
+  renderDash()
+  toast('Arribo confirmado: '+d.tipo+' '+d.numero)
+}
+
+// ── Anulación masiva ─────────────────────────────────────────────
+function abrirModalAnular(){
+  if(!sel.size)return
+  document.getElementById('m-anular-sub').textContent=`Se anularán ${sel.size} documento${sel.size!==1?'s':''} permanentemente.`
+  document.getElementById('motivo').value=''
+  document.getElementById('modal-anular').classList.add('open')
+}
+function cerrarModal(id){document.getElementById(id).classList.remove('open')}
+function confirmarAnulacion(){
+  const motivo=document.getElementById('motivo').value.trim()
+  if(motivo.length<5){toast('Motivo mínimo 5 caracteres','err');return}
+  let ok=0
+  docs.forEach(d=>{if(sel.has(d.id)){d.estado=d.tipo==='CTG'?'Anulado':'Anulada';d.motivo_anulacion=motivo;ok++}})
+  saveDocs();sel.clear();cerrarModal('modal-anular')
+  toast(`${ok} documento${ok!==1?'s':''} anulado${ok!==1?'s':''}`)
+  docsV=[...docs];renderHist(docsV);metricas()
+}
+
+// ── Exportaciones ────────────────────────────────────────────────
+function exportCSV(){
+  const headers=['Tipo','Número','Especie','Cosecha','Estado','CUIT Remitente','CUIT Destinatario','Peso Neto (kg)','Fecha Emisión','Vigencia','CTG asociado','Confirmación']
+  const filas=docs.map(d=>[d.tipo,d.numero,d.especie,d.cosecha,d.estado,d.cuit_remitente||'',d.cuit_destinatario||'',d.peso_neto||'',d.fecha_emision||'',d.vigencia_hasta||'',d.numero_ctg||'',d.fecha_confirmacion||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))
+  const csv=[headers.join(','),...filas].join('\n')
+  const a=document.createElement('a')
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv)
+  a.download='historial_agro_'+new Date().toISOString().slice(0,10)+'.csv'
+  a.click();toast('CSV exportado')
+}
+
+function exportXLSX(){
+  // En la versión con backend: fetch('/api/agro/excel').then(r=>r.blob()).then(b=>{...})
+  // En modo offline: exportar CSV y avisar
+  toast('Excel disponible con el backend conectado. Exportando CSV...','')
+  setTimeout(exportCSV, 800)
+}
+
+function backupJSON(){
+  const a=document.createElement('a')
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(docs,null,2))
+  a.download='agro_backup_'+new Date().toISOString().slice(0,10)+'.json'
+  a.click();toast('Backup exportado')
+}
+
+// ── Config ───────────────────────────────────────────────────────
+function saveConfig(){
+  localStorage.setItem('agro-cfg',JSON.stringify({
+    rs:document.getElementById('cfg-rs').value,
+    cuit:document.getElementById('cfg-cuit').value,
+    loc:document.getElementById('cfg-loc').value,
+    cos:document.getElementById('cfg-cos').value,
+    url:document.getElementById('cfg-url').value,
+    env:document.getElementById('cfg-env').value,
+    email:document.getElementById('cfg-email').value,
+  }))
+}
+function loadConfig(){
+  try{
+    const c=JSON.parse(localStorage.getItem('agro-cfg')||'{}')
+    if(c.rs)document.getElementById('cfg-rs').value=c.rs
+    if(c.cuit)document.getElementById('cfg-cuit').value=c.cuit
+    if(c.loc)document.getElementById('cfg-loc').value=c.loc
+    if(c.cos)document.getElementById('cfg-cos').value=c.cos
+    if(c.url)document.getElementById('cfg-url').value=c.url
+    if(c.env)document.getElementById('cfg-env').value=c.env
+    if(c.email)document.getElementById('cfg-email').value=c.email
+    document.getElementById('cfg-ndocs').value=docs.length+' documentos'
+  }catch(e){}
+}
+
+// ── Toast ────────────────────────────────────────────────────────
+function toast(msg,tipo){
+  const el=document.getElementById('toast-el')
+  document.getElementById('toast-msg').textContent=msg
+  el.className='toast show'+(tipo==='err'?' err':'')
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3200)
+}
+
+// ── Métricas globales ────────────────────────────────────────────
+function metricas(){
+  document.getElementById('m-ctg').textContent=docs.filter(d=>d.tipo==='CTG'&&['Activo','Pendiente'].includes(d.estado)).length
+  document.getElementById('m-cpe').textContent=docs.filter(d=>d.tipo==='CPE').length
+  document.getElementById('m-ton').textContent=Math.round(docs.reduce((s,d)=>s+(d.peso_neto||0),0)/1000)
+  document.getElementById('m-pend').textContent=docs.filter(d=>['Pendiente','Activo','Activa'].includes(d.estado)).length
+}
+
+// ── Datos demo ───────────────────────────────────────────────────
+if(!docs.length){
+  const hoy=new Date().toISOString().slice(0,10)
+  const d2=()=>{const d=new Date();d.setDate(d.getDate()+2);return d.toISOString().slice(0,10)}
+  const d3=()=>{const d=new Date();d.setDate(d.getDate()+3);return d.toISOString().slice(0,10)}
+  docs=[
+    {id:'1',tipo:'CPE',numero:'74001234567',especie:'Soja',cosecha:'2024/2025',tipo_grano:'Nuevo',estado:'Activa',razon_social_remitente:'AGROPECUARIA SAN CARLOS S.A.',cuit_remitente:'30-71234567-0',razon_social_destinatario:'ACEITERA DEL LITORAL S.A.',cuit_destinatario:'30-65432100-9',localidad_productor:'Río Cuarto, Córdoba',localidad_destino:'San Lorenzo, Santa Fe',dominio_vehiculo:'AB123CD',dominio_acoplado:'EF456GH',peso_bruto_declarado:31500,peso_tara:13200,peso_neto:18300,humedad:13.5,fecha_emision:hoy,vigencia_hasta:d2()},
+    {id:'2',tipo:'CTG',numero:'CTG42987654',especie:'Maíz',cosecha:'2024/2025',grado:'Grado 2',estado:'Activo',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-88888888-0',patente_vehiculo:'CD456EF',peso_neto:24500,fecha_emision:hoy,vigencia_hasta:d3()},
+    {id:'3',tipo:'CPE',numero:'74009876543',especie:'Trigo',cosecha:'2024/2025',tipo_grano:'Nuevo',estado:'Confirmada',razon_social_remitente:'AGROPECUARIA SAN CARLOS S.A.',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-55555555-0',dominio_vehiculo:'GH789IJ',peso_neto:21800,fecha_emision:'2025-03-01',vigencia_hasta:'2025-03-03',fecha_confirmacion:'2025-03-03'},
+    {id:'4',tipo:'CTG',numero:'CTG38741200',especie:'Soja',cosecha:'2024/2025',grado:'Grado 1',estado:'Confirmado',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-44444444-0',peso_neto:19200,fecha_emision:'2025-02-20',vigencia_hasta:'2025-02-23',fecha_confirmacion:'2025-02-23'},
+    {id:'5',tipo:'CPE',numero:'74001111222',especie:'Girasol',cosecha:'2024/2025',tipo_grano:'Nuevo',estado:'Anulada',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-33333333-0',dominio_vehiculo:'KL012MN',peso_neto:15600,fecha_emision:'2025-02-10',vigencia_hasta:'2025-02-12'},
+    {id:'6',tipo:'CPE',numero:'74005556667',especie:'Maíz',cosecha:'2024/2025',estado:'Activa',razon_social_remitente:'AGROPECUARIA SAN CARLOS S.A.',cuit_remitente:'30-71234567-0',razon_social_destinatario:'MOLINOS RÍO S.A.',cuit_destinatario:'30-77777777-0',peso_neto:28100,fecha_emision:'2025-03-10',vigencia_hasta:d2()},
+    {id:'7',tipo:'CTG',numero:'CTG52000001',especie:'Cebada cervecera',cosecha:'2024/2025',estado:'Activo',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-99999999-0',peso_neto:12400,fecha_emision:'2025-01-15',vigencia_hasta:'2025-01-18'},
+    {id:'8',tipo:'CPE',numero:'74008880001',especie:'Soja',cosecha:'2024/2025',estado:'Confirmada',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-11111111-0',peso_neto:22000,fecha_emision:'2025-01-20',vigencia_hasta:'2025-01-22',fecha_confirmacion:'2025-01-22'},
+  ]
+  saveDocs()
+}
+
+metricas()
+renderDash()
+</script>
+</body>
+</html>

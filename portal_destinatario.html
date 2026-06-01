@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Destinatario — AgroGestión</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#efefeb;
+  --txt:#1a1a18;--txt2:#666662;--txt3:#999994;
+  --brd:#e0e0da;--brd2:#c0c0ba;
+  --verde:#1D9E75;--vd:#0F6E56;--vcl:#e8f5ee;
+  --azul:#185FA5;--acl:#E6F1FB;
+  --amb:#BA7517;--amcl:#FAEEDA;
+  --rojo:#A32D2D;--rcl:#FCEBEB;--rbrd:#E24B4A;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{--bg:#1e1e1c;--bg2:#2a2a28;--bg3:#141412;--txt:#f0f0ec;--txt2:#a0a09c;--txt3:#666660;--brd:#3a3a36;--brd2:#555550;--vcl:#0a2e1e;--acl:#0a1e36;--amcl:#2e1e00;--rcl:#2e0a0a}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--txt);font-size:14px;min-height:100vh}
+
+/* Login screen */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--bg);border:1px solid var(--brd);border-radius:var(--rl);padding:32px;width:100%;max-width:400px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.brand-icon{width:40px;height:40px;background:var(--vcl);border-radius:var(--r);display:flex;align-items:center;justify-content:center;color:var(--verde);font-size:22px}
+.brand-name{font-size:18px;font-weight:600}
+.brand-sub{font-size:12px;color:var(--txt2)}
+.login-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--txt2);margin-bottom:20px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fl{font-size:12px;font-weight:500;color:var(--txt2)}
+input,select,textarea{font-size:13px;padding:9px 12px;border-radius:var(--r);border:1px solid var(--brd);background:var(--bg);color:var(--txt);outline:none;font-family:inherit;width:100%;transition:border .15s}
+input:focus,select:focus{border-color:var(--verde)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:var(--r);border:1px solid var(--brd);background:var(--bg);color:var(--txt);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s;width:100%}
+.btn-primary{background:var(--verde);border-color:var(--verde);color:#fff;font-weight:500}
+.btn-primary:hover{background:var(--vd);border-color:var(--vd)}
+.btn-sm{width:auto;padding:6px 12px;font-size:12px}
+.btn-outline{background:transparent;border-color:var(--verde);color:var(--verde)}
+.btn-outline:hover{background:var(--vcl)}
+.btn-danger{background:var(--rbrd);border-color:var(--rbrd);color:#fff}
+.btn-danger:hover{background:var(--rojo)}
+
+/* App shell */
+.app{display:none;flex-direction:column;min-height:100vh}
+.topbar{background:var(--bg);border-bottom:1px solid var(--brd);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.topbar-icon{width:32px;height:32px;background:var(--vcl);border-radius:var(--r);display:flex;align-items:center;justify-content:center;color:var(--verde);font-size:18px}
+.topbar-name{font-size:14px;font-weight:600}
+.topbar-sub{font-size:11px;color:var(--txt2)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.cuit-badge{font-size:12px;color:var(--txt2);background:var(--bg2);padding:5px 10px;border-radius:99px;font-family:monospace}
+
+.content{padding:20px;flex:1;max-width:800px;margin:0 auto;width:100%}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat{background:var(--bg);border:1px solid var(--brd);border-radius:var(--r);padding:14px 16px}
+.stat-label{font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.stat-val{font-size:22px;font-weight:600}
+.stat-sub{font-size:11px;color:var(--txt2);margin-top:2px}
+
+/* Cards */
+.sc{background:var(--bg);border:1px solid var(--brd);border-radius:var(--rl);overflow:hidden;margin-bottom:16px}
+.sc-hdr{padding:13px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.sc-title{font-size:14px;font-weight:600}
+
+/* CPE cards */
+.cpe-card{border:1px solid var(--brd);border-radius:var(--rl);overflow:hidden;margin-bottom:12px;background:var(--bg)}
+.cpe-header{padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.cpe-num{font-family:monospace;font-size:13px;font-weight:600;color:var(--txt)}
+.cpe-especie{font-size:15px;font-weight:600;margin-top:2px}
+.cpe-meta{font-size:12px;color:var(--txt2);margin-top:3px}
+.cpe-body{padding:0 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cpe-field{display:flex;flex-direction:column;gap:2px}
+.cpe-field-label{font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em}
+.cpe-field-val{font-size:13px;font-weight:500}
+.cpe-footer{padding:12px 16px;border-top:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;background:var(--bg2)}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:500}
+.bg-green{background:#EAF3DE;color:#3B6D11}
+.bg-blue{background:#E6F1FB;color:#185FA5}
+.bg-amber{background:#FAEEDA;color:#854F0B}
+.bg-red{background:var(--rcl);color:var(--rojo)}
+.bg-gray{background:#F1EFE8;color:#5F5E5A}
+.venc-warn{color:var(--rbrd);font-size:12px;font-weight:500;display:flex;align-items:center;gap:4px}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-end;justify-content:center;padding:0}
+.overlay.open{display:flex}
+@media(min-width:600px){.overlay{align-items:center;padding:20px}}
+.modal{background:var(--bg);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:480px;padding:24px;border:1px solid var(--brd)}
+@media(min-width:600px){.modal{border-radius:var(--rl)}}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--txt2);margin-bottom:18px}
+.modal-info{background:var(--bg2);border-radius:var(--r);padding:12px 14px;margin-bottom:18px;font-size:13px}
+.modal-info-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--brd)}
+.modal-info-row:last-child{border-bottom:none}
+.modal-info-label{color:var(--txt2)}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.modal-actions .btn{flex:1}
+.diff-info{font-size:12px;color:var(--txt2);margin-top:6px;min-height:18px}
+.diff-ok{color:var(--verde)}
+.diff-warn{color:var(--amb)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--vd);color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;z-index:200;display:none;align-items:center;gap:8px;white-space:nowrap}
+.toast.show{display:flex}
+.toast.err{background:var(--rbrd)}
+
+.empty{padding:40px 20px;text-align:center;color:var(--txt2)}
+.empty i{font-size:32px;display:block;margin-bottom:10px;color:var(--txt3)}
+.section-label{font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;padding:4px 0 10px}
+.divider{height:1px;background:var(--brd);margin:4px 0 16px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-screen">
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-icon"><i class="ti ti-plant-2" aria-hidden="true"></i></div>
+      <div>
+        <div class="brand-name">AgroGestión</div>
+        <div class="brand-sub">Portal de Destinatario</div>
+      </div>
+    </div>
+    <div class="login-title">Ingresá para ver tus recepciones</div>
+    <div class="login-sub">Usá el CUIT de tu empresa para ver las Cartas de Porte que tienen tu planta como destino.</div>
+    <div class="fg">
+      <label class="fl">CUIT destinatario</label>
+      <input type="text" id="login-cuit" placeholder="30-65432100-9" maxlength="13">
+    </div>
+    <div class="fg">
+      <label class="fl">Nombre de la empresa (opcional)</label>
+      <input type="text" id="login-nombre" placeholder="Aceitera del Litoral S.A.">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()" style="margin-top:4px"><i class="ti ti-login" aria-hidden="true"></i> Ingresar</button>
+    <p style="font-size:11px;color:var(--txt3);margin-top:14px;text-align:center">Demo: usá el CUIT <strong>30-65432100-9</strong></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-icon"><i class="ti ti-plant-2" aria-hidden="true"></i></div>
+      <div>
+        <div class="topbar-name">Portal Destinatario</div>
+        <div class="topbar-sub">AgroGestión</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="cuit-badge" id="cuit-display"></span>
+      <button class="btn btn-sm" onclick="doLogout()" style="width:auto"><i class="ti ti-logout" aria-hidden="true"></i> Salir</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Pendientes</div>
+        <div class="stat-val" style="color:var(--amb)" id="s-pend">0</div>
+        <div class="stat-sub">por confirmar</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Confirmadas hoy</div>
+        <div class="stat-val" style="color:var(--verde)" id="s-conf">0</div>
+        <div class="stat-sub">arribar ok</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Tn pendientes</div>
+        <div class="stat-val" id="s-tn">0</div>
+        <div class="stat-sub">kg netos</div>
+      </div>
+    </div>
+
+    <!-- Pendientes -->
+    <div class="section-label">Pendientes de confirmación</div>
+    <div id="lista-pendientes"></div>
+    <div class="divider"></div>
+
+    <!-- Historial -->
+    <div class="section-label">Historial reciente</div>
+    <div id="lista-historial"></div>
+  </div>
+</div>
+
+<!-- Modal confirmar arribo -->
+<div class="overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">Confirmar arribo</div>
+    <div class="modal-sub" id="m-sub">Carta de Porte N° ...</div>
+    <div class="modal-info" id="m-info"></div>
+    <div class="fg">
+      <label class="fl">Peso neto confirmado en balanza (kg)</label>
+      <input type="number" id="m-peso" placeholder="Dejar vacío si coincide con lo declarado" oninput="calcDiff()">
+      <div class="diff-info" id="diff-info"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Observaciones en destino</label>
+      <textarea id="m-obs" rows="2" placeholder="Calidad, condiciones, incidencias..." style="width:100%;margin-top:4px"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmar()"><i class="ti ti-check" aria-hidden="true"></i> Confirmar arribo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast-el"><i class="ti ti-check" aria-hidden="true"></i><span id="toast-msg"></span></div>
+
+<script>
+let miCuit = ''
+let docs = JSON.parse(localStorage.getItem('agro-docs') || '[]')
+let docActivo = null
+
+const BEST = {Activo:'bg-green',Activa:'bg-green',Confirmado:'bg-blue',Confirmada:'bg-blue',
+  Anulado:'bg-red',Anulada:'bg-red',Pendiente:'bg-amber',Vencido:'bg-gray',Vencida:'bg-gray'}
+
+function fmtKg(n){return n||n===0?Number(n).toLocaleString('es-AR')+' kg':'—'}
+function fmtFecha(s){if(!s)return'—';try{return new Date(s.slice(0,10)+'T00:00:00').toLocaleDateString('es-AR')}catch{return s}}
+function diasRestantes(s){if(!s)return null;try{return Math.ceil((new Date(s+'T23:59:59')-new Date())/86400000)}catch{return null}}
+
+function doLogin(){
+  const cuit = document.getElementById('login-cuit').value.trim()
+  const nombre = document.getElementById('login-nombre').value.trim()
+  if(!cuit){toast('Ingresá tu CUIT','err');return}
+  miCuit = cuit
+  localStorage.setItem('dest-cuit', cuit)
+  if(nombre) localStorage.setItem('dest-nombre', nombre)
+  document.getElementById('cuit-display').textContent = cuit
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('app').style.display = 'flex'
+  render()
+}
+
+function doLogout(){
+  miCuit = ''
+  document.getElementById('app').style.display = 'none'
+  document.getElementById('login-screen').style.display = 'flex'
+}
+
+function getMisDocs(){
+  return docs.filter(d => d.cuit_destinatario === miCuit || d.cuit_destino === miCuit)
+}
+
+function render(){
+  const todos = getMisDocs()
+  const pendientes = todos.filter(d => ['Activa','Activo','Pendiente'].includes(d.estado))
+  const historial  = todos.filter(d => !['Activa','Activo','Pendiente'].includes(d.estado)).slice(0,10)
+  const tn = pendientes.reduce((s,d)=>s+(d.peso_neto||0),0)
+  const confHoy = todos.filter(d=>['Confirmada','Confirmado'].includes(d.estado) && d.fecha_confirmacion===new Date().toISOString().slice(0,10)).length
+
+  document.getElementById('s-pend').textContent = pendientes.length
+  document.getElementById('s-conf').textContent = confHoy
+  document.getElementById('s-tn').textContent = Math.round(tn/1000)
+
+  const lp = document.getElementById('lista-pendientes')
+  if(!pendientes.length){
+    lp.innerHTML = '<div class="empty"><i class="ti ti-circle-check" aria-hidden="true"></i>Sin cargas pendientes de confirmar</div>'
+  } else {
+    lp.innerHTML = pendientes.map(d => cardCPE(d, true)).join('')
+  }
+
+  const lh = document.getElementById('lista-historial')
+  if(!historial.length){
+    lh.innerHTML = '<div class="empty" style="padding:20px"><i class="ti ti-history" aria-hidden="true"></i>Sin historial</div>'
+  } else {
+    lh.innerHTML = historial.map(d => cardCPE(d, false)).join('')
+  }
+}
+
+function cardCPE(d, pendiente){
+  const dias = diasRestantes(d.vigencia_hasta)
+  const vencWarning = dias !== null && dias <= 1 && pendiente
+    ? `<span class="venc-warn"><i class="ti ti-alert-triangle" aria-hidden="true"></i>${dias <= 0 ? 'Vencida' : 'Vence hoy'}</span>`
+    : `<span style="font-size:12px;color:var(--txt2)">Vigente hasta ${fmtFecha(d.vigencia_hasta)}</span>`
+
+  return `<div class="cpe-card">
+    <div class="cpe-header">
+      <div style="flex:1">
+        <div class="cpe-num">${d.tipo} N° ${d.numero}</div>
+        <div class="cpe-especie">${d.especie} <span style="font-weight:400;font-size:13px;color:var(--txt2)">${d.cosecha}</span></div>
+        <div class="cpe-meta">${d.razon_social_remitente||d.cuit_remitente||'—'}</div>
+      </div>
+      <span class="badge ${BEST[d.estado]||'bg-gray'}">${d.estado}</span>
+    </div>
+    <div class="cpe-body">
+      <div class="cpe-field">
+        <div class="cpe-field-label">Peso neto declarado</div>
+        <div class="cpe-field-val">${fmtKg(d.peso_neto)}</div>
+      </div>
+      <div class="cpe-field">
+        <div class="cpe-field-label">Vehículo</div>
+        <div class="cpe-field-val">${d.dominio_vehiculo||d.patente_vehiculo||'—'}</div>
+      </div>
+      <div class="cpe-field">
+        <div class="cpe-field-label">Origen</div>
+        <div class="cpe-field-val" style="font-size:12px">${d.localidad_productor||d.establecimiento||'—'}</div>
+      </div>
+      <div class="cpe-field">
+        <div class="cpe-field-label">Emisión</div>
+        <div class="cpe-field-val">${fmtFecha(d.fecha_emision)}</div>
+      </div>
+    </div>
+    <div class="cpe-footer">
+      ${vencWarning}
+      ${pendiente
+        ? `<button class="btn btn-primary btn-sm" onclick="abrirModal('${d.id}')"><i class="ti ti-check" aria-hidden="true"></i> Confirmar arribo</button>`
+        : d.peso_neto_confirmado
+          ? `<span style="font-size:12px;color:var(--verde)"><i class="ti ti-check" aria-hidden="true"></i> Confirmado — ${fmtKg(d.peso_neto_confirmado)}</span>`
+          : `<span style="font-size:12px;color:var(--txt2)">${d.estado}</span>`
+      }
+    </div>
+  </div>`
+}
+
+function abrirModal(id){
+  docActivo = docs.find(d => d.id === id)
+  if(!docActivo) return
+  document.getElementById('m-sub').textContent = `${docActivo.tipo} N° ${docActivo.numero} — ${docActivo.especie}`
+  document.getElementById('m-info').innerHTML = `
+    <div class="modal-info-row"><span class="modal-info-label">Remitente</span><span>${docActivo.razon_social_remitente||docActivo.cuit_remitente||'—'}</span></div>
+    <div class="modal-info-row"><span class="modal-info-label">Origen</span><span>${docActivo.localidad_productor||'—'}</span></div>
+    <div class="modal-info-row"><span class="modal-info-label">Vehículo</span><span>${docActivo.dominio_vehiculo||docActivo.patente_vehiculo||'—'}</span></div>
+    <div class="modal-info-row"><span class="modal-info-label">Peso neto declarado</span><span style="font-weight:500">${fmtKg(docActivo.peso_neto)}</span></div>
+  `
+  document.getElementById('m-peso').value = ''
+  document.getElementById('m-obs').value = ''
+  document.getElementById('diff-info').innerHTML = ''
+  document.getElementById('modal-overlay').classList.add('open')
+}
+
+function calcDiff(){
+  if(!docActivo) return
+  const v = parseFloat(document.getElementById('m-peso').value)
+  if(!v || !docActivo.peso_neto){document.getElementById('diff-info').innerHTML='';return}
+  const diff = v - docActivo.peso_neto
+  const pct = ((diff/docActivo.peso_neto)*100).toFixed(1)
+  const cls = Math.abs(diff) < 200 ? 'diff-ok' : 'diff-warn'
+  const signo = diff > 0 ? '+' : ''
+  document.getElementById('diff-info').innerHTML =
+    `<span class="${cls}">Diferencia: ${signo}${Number(diff).toLocaleString('es-AR')} kg (${signo}${pct}%)</span>`
+}
+
+function confirmar(){
+  if(!docActivo) return
+  const pesoConf = document.getElementById('m-peso').value
+  const obs = document.getElementById('m-obs').value
+  const idx = docs.findIndex(d => d.id === docActivo.id)
+  if(idx === -1) return
+  docs[idx].estado = docs[idx].tipo === 'CTG' ? 'Confirmado' : 'Confirmada'
+  if(pesoConf) docs[idx].peso_neto_confirmado = parseInt(pesoConf)
+  if(obs) docs[idx].observaciones_destino = obs
+  docs[idx].fecha_confirmacion = new Date().toISOString().slice(0,10)
+  localStorage.setItem('agro-docs', JSON.stringify(docs))
+  cerrarModal()
+  toast('Arribo confirmado correctamente')
+  render()
+}
+
+function cerrarModal(){document.getElementById('modal-overlay').classList.remove('open')}
+
+function toast(msg, tipo){
+  const el = document.getElementById('toast-el')
+  document.getElementById('toast-msg').textContent = msg
+  el.className = 'toast show' + (tipo==='err' ? ' err' : '')
+  clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), 3000)
+}
+
+// Auto-login si hay sesión
+const savedCuit = localStorage.getItem('dest-cuit')
+if(savedCuit){
+  document.getElementById('login-cuit').value = savedCuit
+  doLogin()
+}
+</script>
+</body>
+</html>

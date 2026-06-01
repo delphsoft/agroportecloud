@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Transportista — AgroGestión</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#efefeb;
+  --txt:#1a1a18;--txt2:#666662;--txt3:#999994;
+  --brd:#e0e0da;
+  --azul:#185FA5;--acl:#E6F1FB;--adk:#0C447C;
+  --verde:#1D9E75;--vd:#0F6E56;--vcl:#e8f5ee;
+  --amb:#BA7517;--amcl:#FAEEDA;
+  --rojo:#A32D2D;--rcl:#FCEBEB;--rbrd:#E24B4A;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{--bg:#1e1e1c;--bg2:#2a2a28;--bg3:#141412;--txt:#f0f0ec;--txt2:#a0a09c;--txt3:#666660;--brd:#3a3a36;--acl:#0a1e36;--vcl:#0a2e1e;--amcl:#2e1e00;--rcl:#2e0a0a}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--txt);font-size:14px;min-height:100vh}
+
+/* Mobile-first */
+.topbar{background:var(--azul);padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.topbar-icon{font-size:24px;color:#fff}
+.topbar-name{font-size:15px;font-weight:600;color:#fff}
+.topbar-sub{font-size:11px;color:rgba(255,255,255,.7)}
+.topbar-right .btn-sm{color:#fff;border-color:rgba(255,255,255,.4);background:transparent;font-size:12px;padding:5px 10px}
+.topbar-right .btn-sm:hover{background:rgba(255,255,255,.15)}
+
+/* Search hero */
+.search-hero{background:var(--azul);padding:0 20px 24px}
+.search-box{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:var(--rl);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.search-box i{color:rgba(255,255,255,.7);font-size:20px}
+.search-box input{background:none;border:none;outline:none;color:#fff;font-size:16px;flex:1;font-family:inherit;text-transform:uppercase;letter-spacing:.05em}
+.search-box input::placeholder{color:rgba(255,255,255,.5);text-transform:none;letter-spacing:0}
+
+.content{padding:16px;max-width:520px;margin:0 auto}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.stat{background:var(--bg);border:1px solid var(--brd);border-radius:var(--r);padding:10px 12px;text-align:center}
+.stat-val{font-size:20px;font-weight:600}
+.stat-label{font-size:11px;color:var(--txt2);margin-top:2px}
+
+/* Trip card — big mobile-first design */
+.trip-card{background:var(--bg);border:1px solid var(--brd);border-radius:var(--rl);overflow:hidden;margin-bottom:12px}
+.trip-hero{background:var(--acl);padding:16px;display:flex;align-items:center;gap:14px}
+.trip-icon-wrap{width:48px;height:48px;background:var(--azul);border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.trip-icon-wrap i{font-size:24px;color:#fff}
+.trip-num{font-family:monospace;font-size:12px;color:var(--adk)}
+.trip-especie{font-size:16px;font-weight:600;color:var(--azul)}
+.trip-cosecha{font-size:12px;color:var(--adk)}
+.trip-badge{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+
+/* Route visualization */
+.route{padding:16px;display:flex;align-items:center;gap:0}
+.route-point{flex-shrink:0;text-align:center;width:80px}
+.route-label{font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.route-city{font-size:12px;font-weight:500;line-height:1.3}
+.route-line{flex:1;height:2px;background:var(--brd);position:relative;margin:0 8px}
+.route-truck{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:0 4px;color:var(--azul);font-size:18px;line-height:1}
+
+/* Fields grid */
+.trip-fields{padding:0 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tf{display:flex;flex-direction:column;gap:2px}
+.tf-label{font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em}
+.tf-val{font-size:13px;font-weight:500}
+
+/* Footer */
+.trip-footer{padding:12px 16px;border-top:1px solid var(--brd);background:var(--bg2);display:flex;align-items:center;justify-content:space-between}
+.vig{display:flex;align-items:center;gap:4px;font-size:12px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r);border:1px solid var(--brd);background:var(--bg);color:var(--txt);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);border-color:var(--azul);color:#fff;font-weight:500}
+.btn-primary:hover{background:var(--adk)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-ghost{background:transparent;border:none;color:var(--txt2);padding:4px 8px}
+.btn-ghost:hover{background:var(--bg2)}
+
+/* Badge */
+.badge{display:inline-flex;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:500}
+.bg-green{background:#EAF3DE;color:#3B6D11}
+.bg-blue{background:#E6F1FB;color:#185FA5}
+.bg-amber{background:#FAEEDA;color:#854F0B}
+.bg-gray{background:#F1EFE8;color:#5F5E5A}
+.bg-red{background:var(--rcl);color:var(--rojo)}
+
+.venc-warn{color:var(--rbrd);font-weight:500}
+.empty{padding:32px 16px;text-align:center;color:var(--txt2)}
+.empty i{font-size:40px;display:block;margin-bottom:12px;color:var(--txt3)}
+.empty-title{font-size:15px;font-weight:500;margin-bottom:6px}
+.empty-sub{font-size:13px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;z-index:200;display:none;align-items:center;gap:8px;white-space:nowrap}
+.toast.show{display:flex}
+
+.patente-chip{background:var(--bg);border:2px solid var(--brd);border-radius:var(--r);padding:6px 14px;font-family:monospace;font-size:14px;font-weight:700;letter-spacing:.1em;color:var(--txt);display:inline-flex;align-items:center;gap:6px}
+
+.section-head{font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;padding:4px 0 10px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-icon"><i class="ti ti-truck" aria-hidden="true"></i></div>
+    <div>
+      <div class="topbar-name">Portal Transportista</div>
+      <div class="topbar-sub">AgroGestión</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-sm" id="logout-btn" style="display:none" onclick="cerrarSesion()"><i class="ti ti-logout" aria-hidden="true"></i> Salir</button>
+  </div>
+</div>
+
+<!-- Search hero -->
+<div class="search-hero">
+  <div class="search-box">
+    <i class="ti ti-license-plate" aria-hidden="true"></i>
+    <input type="text" id="search-pat" placeholder="Ingresá la patente del camión..." maxlength="8" oninput="buscar(this.value)">
+    <button class="btn-ghost" onclick="limpiarBusqueda()" style="color:rgba(255,255,255,.6);background:none;border:none;cursor:pointer;font-size:18px"><i class="ti ti-x" aria-hidden="true"></i></button>
+  </div>
+</div>
+
+<div class="content">
+  <div id="estado-inicial">
+    <div class="empty" style="padding:40px 0">
+      <i class="ti ti-truck" aria-hidden="true"></i>
+      <div class="empty-title">Buscá tu patente</div>
+      <div class="empty-sub">Ingresá la patente del vehículo para ver tus cartas de porte activas</div>
+    </div>
+  </div>
+
+  <div id="resultados" style="display:none">
+    <div class="stats" id="stats-row"></div>
+    <div id="activos-section">
+      <div class="section-head">Viajes activos</div>
+      <div id="lista-activos"></div>
+    </div>
+    <div id="hist-section" style="margin-top:4px">
+      <div class="section-head">Viajes recientes</div>
+      <div id="lista-hist"></div>
+    </div>
+  </div>
+
+  <div id="no-resultados" style="display:none">
+    <div class="empty">
+      <i class="ti ti-search" aria-hidden="true"></i>
+      <div class="empty-title">Sin viajes para esa patente</div>
+      <div class="empty-sub">Verificá el número de patente o contactá al operador</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast-el"><span id="toast-msg"></span></div>
+
+<script>
+const docs = JSON.parse(localStorage.getItem('agro-docs') || '[]')
+let patActual = ''
+
+const BEST = {Activo:'bg-green',Activa:'bg-green',Confirmado:'bg-blue',Confirmada:'bg-blue',
+  Pendiente:'bg-amber',Anulado:'bg-red',Anulada:'bg-red',Vencido:'bg-gray',Vencida:'bg-gray'}
+
+function fmtKg(n){return n||n===0?Number(n).toLocaleString('es-AR')+' kg':'—'}
+function fmtFecha(s){if(!s)return'—';try{return new Date(s.slice(0,10)+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})}catch{return s}}
+function diasRestantes(s){if(!s)return null;try{return Math.ceil((new Date(s+'T23:59:59')-new Date())/86400000)}catch{return null}}
+
+function buscar(val){
+  const pat = val.trim().toUpperCase().replace(/[^A-Z0-9]/g,'')
+  document.getElementById('search-pat').value = val.toUpperCase()
+  patActual = pat
+
+  if(pat.length < 2){
+    document.getElementById('estado-inicial').style.display='block'
+    document.getElementById('resultados').style.display='none'
+    document.getElementById('no-resultados').style.display='none'
+    return
+  }
+
+  const encontrados = docs.filter(d =>
+    (d.dominio_vehiculo||'').replace(/[^A-Z0-9]/g,'').includes(pat) ||
+    (d.dominio_acoplado||'').replace(/[^A-Z0-9]/g,'').includes(pat) ||
+    (d.patente_vehiculo||'').replace(/[^A-Z0-9]/g,'').includes(pat)
+  )
+
+  document.getElementById('estado-inicial').style.display='none'
+
+  if(!encontrados.length){
+    document.getElementById('resultados').style.display='none'
+    document.getElementById('no-resultados').style.display='block'
+    return
+  }
+
+  document.getElementById('resultados').style.display='block'
+  document.getElementById('no-resultados').style.display='none'
+
+  const activos  = encontrados.filter(d=>['Activo','Activa','Pendiente'].includes(d.estado))
+  const recientes = encontrados.filter(d=>!['Activo','Activa','Pendiente'].includes(d.estado)).slice(0,5)
+  const kgPend   = activos.reduce((s,d)=>s+(d.peso_neto||0),0)
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat"><div class="stat-val" style="color:var(--azul)">${activos.length}</div><div class="stat-label">Activos</div></div>
+    <div class="stat"><div class="stat-val">${Math.round(kgPend/1000)}</div><div class="stat-label">Tn pend.</div></div>
+    <div class="stat"><div class="stat-val">${encontrados.length}</div><div class="stat-label">Total</div></div>
+  `
+
+  document.getElementById('lista-activos').innerHTML = activos.length
+    ? activos.map(d=>tripCard(d)).join('')
+    : '<div style="font-size:13px;color:var(--txt2);padding:8px 0 16px">Sin viajes activos</div>'
+
+  document.getElementById('lista-hist').innerHTML = recientes.length
+    ? recientes.map(d=>tripCard(d)).join('')
+    : '<div style="font-size:13px;color:var(--txt2);padding:8px 0">Sin historial</div>'
+}
+
+function tripCard(d){
+  const dias = diasRestantes(d.vigencia_hasta)
+  const activo = ['Activo','Activa','Pendiente'].includes(d.estado)
+  const vencTag = activo && dias !== null
+    ? dias <= 0  ? '<span class="venc-warn">Vencida</span>'
+    : dias === 1 ? '<span class="venc-warn">Vence hoy</span>'
+    : `<span style="font-size:12px;color:var(--txt2)">Vence ${fmtFecha(d.vigencia_hasta)}</span>`
+    : `<span style="font-size:12px;color:var(--txt2)">${fmtFecha(d.fecha_emision)}</span>`
+
+  const domV = d.dominio_vehiculo || d.patente_vehiculo || '—'
+  const domA = d.dominio_acoplado || ''
+
+  return `<div class="trip-card">
+    <div class="trip-hero">
+      <div class="trip-icon-wrap"><i class="ti ti-file-certificate" aria-hidden="true"></i></div>
+      <div style="flex:1">
+        <div class="trip-num">${d.tipo} N° ${d.numero}</div>
+        <div class="trip-especie">${d.especie}</div>
+        <div class="trip-cosecha">${d.cosecha}</div>
+      </div>
+      <div class="trip-badge">
+        <span class="badge ${BEST[d.estado]||'bg-gray'}">${d.estado}</span>
+        <div style="margin-top:6px">
+          <span class="patente-chip" style="padding:4px 10px;font-size:12px"><i class="ti ti-license-plate" aria-hidden="true"></i>${domV}</span>
+          ${domA ? `<div style="text-align:right;font-size:11px;color:var(--txt2);margin-top:2px">Acoplado: ${domA}</div>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="route">
+      <div class="route-point">
+        <div class="route-label">Origen</div>
+        <div class="route-city">${(d.localidad_productor||d.establecimiento||'Campo').split(',')[0]}</div>
+      </div>
+      <div class="route-line"><div class="route-truck"><i class="ti ti-truck" aria-hidden="true"></i></div></div>
+      <div class="route-point">
+        <div class="route-label">Destino</div>
+        <div class="route-city">${(d.localidad_destino||'Planta').split(',')[0]}</div>
+      </div>
+    </div>
+    <div class="trip-fields">
+      <div class="tf"><div class="tf-label">Remitente</div><div class="tf-val" style="font-size:12px">${(d.razon_social_remitente||d.cuit_remitente||'—').slice(0,26)}</div></div>
+      <div class="tf"><div class="tf-label">Destinatario</div><div class="tf-val" style="font-size:12px">${(d.razon_social_destinatario||d.cuit_destinatario||'—').slice(0,26)}</div></div>
+      <div class="tf"><div class="tf-label">Peso neto</div><div class="tf-val">${fmtKg(d.peso_neto)}</div></div>
+      <div class="tf"><div class="tf-label">Km a recorrer</div><div class="tf-val">${d.km_a_recorrer ? d.km_a_recorrer+' km' : '—'}</div></div>
+    </div>
+    <div class="trip-footer">
+      ${vencTag}
+      <button class="btn btn-sm" onclick="compartir('${d.id}')"><i class="ti ti-share" aria-hidden="true"></i> Compartir</button>
+    </div>
+  </div>`
+}
+
+function compartir(id){
+  const d = docs.find(x=>x.id===id)
+  if(!d) return
+  const texto = `📋 ${d.tipo} N° ${d.numero}\n${d.especie} ${d.cosecha}\nOrigen: ${d.localidad_productor||'—'} → Destino: ${d.localidad_destino||'—'}\nPeso neto: ${fmtKg(d.peso_neto)}\nVigencia: ${d.vigencia_hasta||'—'}`
+  if(navigator.share){
+    navigator.share({title:'Carta de Porte',text:texto})
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(texto).then(()=>toast('Datos copiados al portapapeles'))
+  } else {
+    toast('Datos: '+d.tipo+' N° '+d.numero)
+  }
+}
+
+function limpiarBusqueda(){
+  document.getElementById('search-pat').value=''
+  buscar('')
+}
+
+function cerrarSesion(){
+  limpiarBusqueda()
+  document.getElementById('logout-btn').style.display='none'
+}
+
+function toast(msg){
+  const el=document.getElementById('toast-el')
+  document.getElementById('toast-msg').textContent=msg
+  el.classList.add('show')
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3000)
+}
+
+// Demo: pre-rellenar con patente de ejemplo
+const urlP = new URLSearchParams(location.search).get('patente')
+if(urlP){
+  document.getElementById('search-pat').value=urlP.toUpperCase()
+  buscar(urlP)
+}
+</script>
+</body>
+</html>

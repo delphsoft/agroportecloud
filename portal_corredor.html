@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Corredor — AgroGestión</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f3;--bg3:#efefeb;
+  --txt:#1a1a18;--txt2:#666662;--txt3:#999994;
+  --brd:#e0e0da;--brd2:#c0c0ba;
+  --purp:#3C3489;--pcl:#EEEDFE;--pdk:#26215C;
+  --verde:#1D9E75;--vd:#0F6E56;--vcl:#e8f5ee;
+  --azul:#185FA5;--acl:#E6F1FB;
+  --amb:#BA7517;--amcl:#FAEEDA;
+  --rojo:#A32D2D;--rcl:#FCEBEB;--rbrd:#E24B4A;
+  --r:8px;--rl:12px;
+}
+@media(prefers-color-scheme:dark){:root{--bg:#1e1e1c;--bg2:#2a2a28;--bg3:#141412;--txt:#f0f0ec;--txt2:#a0a09c;--txt3:#666660;--brd:#3a3a36;--pcl:#1a1640;--vcl:#0a2e1e;--acl:#0a1e36;--amcl:#2e1e00;--rcl:#2e0a0a}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--txt);font-size:14px;min-height:100vh}
+
+/* Login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--bg);border:1px solid var(--brd);border-radius:var(--rl);padding:32px;width:100%;max-width:400px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.brand-icon{width:40px;height:40px;background:var(--pcl);border-radius:var(--r);display:flex;align-items:center;justify-content:center;color:var(--purp);font-size:22px}
+.brand-name{font-size:17px;font-weight:600}
+.brand-sub{font-size:12px;color:var(--txt2)}
+
+/* Layout */
+.app{display:none;flex-direction:column;min-height:100vh}
+.topbar{background:var(--purp);height:56px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.topbar-icon{font-size:22px;color:#fff}
+.topbar-name{font-size:14px;font-weight:600;color:#fff}
+.topbar-sub{font-size:11px;color:rgba(255,255,255,.6)}
+.cuit-badge{font-size:12px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.15);padding:4px 10px;border-radius:99px;font-family:monospace}
+
+.content{padding:20px;max-width:900px;margin:0 auto;width:100%}
+
+/* Metric cards */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{background:var(--bg);border:1px solid var(--brd);border-radius:var(--r);padding:13px 14px}
+.stat-label{font-size:11px;color:var(--txt2);margin-bottom:5px}
+.stat-val{font-size:22px;font-weight:600}
+.stat-sub{font-size:11px;color:var(--txt2);margin-top:2px}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr}}
+
+/* Section card */
+.sc{background:var(--bg);border:1px solid var(--brd);border-radius:var(--rl);overflow:hidden;margin-bottom:16px}
+.sc-hdr{padding:13px 16px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.sc-title{font-size:14px;font-weight:600}
+
+/* Charts row */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:600px){.charts-row{grid-template-columns:1fr}}
+.chart-card{background:var(--bg);border:1px solid var(--brd);border-radius:var(--rl);padding:14px}
+.chart-title{font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
+
+/* Liquidaciones */
+.liq-card{border:1px solid var(--brd);border-radius:var(--r);overflow:hidden;margin-bottom:10px;background:var(--bg)}
+.liq-header{padding:12px 14px;display:flex;align-items:center;gap:12px}
+.liq-num{font-size:13px;font-weight:600;font-family:monospace;color:var(--purp)}
+.liq-info{flex:1}
+.liq-especie{font-size:14px;font-weight:500}
+.liq-meta{font-size:12px;color:var(--txt2);margin-top:1px}
+.liq-monto{text-align:right}
+.liq-monto-val{font-size:15px;font-weight:600;color:var(--verde)}
+.liq-monto-label{font-size:11px;color:var(--txt2)}
+.liq-body{padding:0 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.lf{display:flex;flex-direction:column;gap:2px}
+.lf-label{font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em}
+.lf-val{font-size:12px;font-weight:500}
+.liq-footer{padding:10px 14px;border-top:1px solid var(--brd);background:var(--bg2);display:flex;align-items:center;justify-content:space-between}
+
+/* Badges */
+.badge{display:inline-flex;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500}
+.bg-green{background:#EAF3DE;color:#3B6D11}
+.bg-blue{background:#E6F1FB;color:#185FA5}
+.bg-amber{background:#FAEEDA;color:#854F0B}
+.bg-purp{background:#EEEDFE;color:#3C3489}
+.bg-gray{background:#F1EFE8;color:#5F5E5A}
+.bg-red{background:var(--rcl);color:var(--rojo)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);border:1px solid var(--brd);background:var(--bg);color:var(--txt);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--purp);border-color:var(--purp);color:#fff}
+.btn-primary:hover{background:var(--pdk);border-color:var(--pdk)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-full{width:100%;justify-content:center}
+
+/* Form */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fl{font-size:12px;font-weight:500;color:var(--txt2)}
+input,select,textarea{font-size:13px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--brd);background:var(--bg);color:var(--txt);outline:none;font-family:inherit;transition:border .15s}
+input:focus,select:focus{border-color:var(--purp)}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.fgrid{padding:16px;display:grid;gap:12px}
+.sdiv{padding:9px 16px;font-size:11px;font-weight:600;color:var(--purp);text-transform:uppercase;letter-spacing:.06em;background:var(--bg2);border-top:1px solid var(--brd);border-bottom:1px solid var(--brd)}
+.fftr{padding:13px 16px;border-top:1px solid var(--brd);display:flex;justify-content:flex-end;gap:8px;background:var(--bg2)}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border-radius:var(--rl);border:1px solid var(--brd);padding:24px;width:100%;max-width:480px}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--txt2);margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.modal-actions .btn{flex:1}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--purp);color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;z-index:200;display:none;align-items:center;gap:8px}
+.toast.show{display:flex}
+
+.tab-row{display:flex;gap:0;border-bottom:1px solid var(--brd);background:var(--bg2)}
+.tab{padding:10px 16px;font-size:13px;cursor:pointer;color:var(--txt2);border-bottom:2px solid transparent;transition:all .15s}
+.tab.active{color:var(--purp);border-bottom-color:var(--purp);background:var(--bg);font-weight:500}
+.tab:hover{color:var(--txt)}
+.tab-panel{display:none;padding:16px}
+.tab-panel.active{display:block}
+
+.empty{padding:32px;text-align:center;color:var(--txt2)}
+.empty i{font-size:28px;display:block;margin-bottom:8px;color:var(--txt3)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-screen">
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-icon"><i class="ti ti-briefcase" aria-hidden="true"></i></div>
+      <div>
+        <div class="brand-name">AgroGestión</div>
+        <div class="brand-sub">Dashboard Corredor</div>
+      </div>
+    </div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:4px">Ingresá tu CUIT de corredor</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:20px">Visualizá las operaciones en las que participás como corredor y gestioná tus liquidaciones.</div>
+    <div class="fg">
+      <label class="fl">CUIT corredor</label>
+      <input type="text" id="login-cuit" placeholder="20-28765432-1">
+    </div>
+    <div class="fg">
+      <label class="fl">Razón social</label>
+      <input type="text" id="login-nombre" placeholder="Cereales del Centro S.A.">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()" style="margin-top:4px"><i class="ti ti-login" aria-hidden="true"></i> Ingresar</button>
+    <p style="font-size:11px;color:var(--txt3);margin-top:14px;text-align:center">Demo: usá el CUIT <strong>20-28765432-1</strong></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-icon"><i class="ti ti-briefcase" aria-hidden="true"></i></div>
+      <div>
+        <div class="topbar-name">Dashboard Corredor</div>
+        <div class="topbar-sub" id="top-nombre">AgroGestión</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="cuit-badge" id="cuit-display"></span>
+      <button class="btn btn-sm" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3);background:transparent" onclick="doLogout()"><i class="ti ti-logout" aria-hidden="true"></i></button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Operaciones</div><div class="stat-val" style="color:var(--purp)" id="m-ops">0</div><div class="stat-sub">con tu CUIT</div></div>
+      <div class="stat"><div class="stat-label">Tn intermediadas</div><div class="stat-val" id="m-tn">0</div><div class="stat-sub">netas</div></div>
+      <div class="stat"><div class="stat-label">Liquidaciones</div><div class="stat-val" style="color:var(--verde)" id="m-liq">0</div><div class="stat-sub">generadas</div></div>
+      <div class="stat"><div class="stat-label">Comisión total</div><div class="stat-val" id="m-com">$0</div><div class="stat-sub">estimada</div></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Toneladas por especie</div>
+        <canvas id="chart-esp" height="160"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Operaciones por mes</div>
+        <canvas id="chart-mes" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- Operaciones & Liquidaciones -->
+    <div class="sc">
+      <div class="sc-hdr">
+        <span class="sc-title">Operaciones y liquidaciones</span>
+        <button class="btn btn-sm btn-primary" onclick="abrirModalLiq()"><i class="ti ti-plus" aria-hidden="true"></i> Nueva liquidación</button>
+      </div>
+      <div class="tab-row">
+        <div class="tab active" onclick="showTab('operaciones',this)">Operaciones</div>
+        <div class="tab" onclick="showTab('liquidaciones',this)">Liquidaciones</div>
+      </div>
+      <div class="tab-panel active" id="tab-operaciones">
+        <div id="lista-ops"></div>
+      </div>
+      <div class="tab-panel" id="tab-liquidaciones">
+        <div id="lista-liqs"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal nueva liquidación -->
+<div class="overlay" id="modal-liq">
+  <div class="modal">
+    <div class="modal-title">Nueva liquidación de corredor</div>
+    <div class="modal-sub">Registrá la comisión por intermediación</div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">Especie</label>
+        <select id="liq-esp"><option>Soja</option><option>Maíz</option><option>Trigo</option><option>Girasol</option><option>Cebada cervecera</option></select>
+      </div>
+      <div class="fg"><label class="fl">Cosecha</label>
+        <select id="liq-cos"><option>2024/2025</option><option>2023/2024</option></select>
+      </div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">Toneladas</label><input type="number" id="liq-tn" placeholder="180.5" step="0.1"></div>
+      <div class="fg"><label class="fl">Precio (USD/tn)</label><input type="number" id="liq-precio" placeholder="280" oninput="calcComision()"></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">% Comisión corredor</label><input type="number" id="liq-pct" placeholder="1.5" step="0.1" value="1.5" oninput="calcComision()"></div>
+      <div class="fg"><label class="fl">Comisión estimada (USD)</label><input type="number" id="liq-com" readonly style="color:var(--purp);font-weight:600"></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">CUIT comprador</label><input type="text" id="liq-comprador" placeholder="30-65432100-9"></div>
+      <div class="fg"><label class="fl">CUIT vendedor</label><input type="text" id="liq-vendedor" placeholder="20-28765432-1"></div>
+    </div>
+    <div class="fg"><label class="fl">CPE o CTG asociado (número)</label><input type="text" id="liq-cpe-num" placeholder="74001234567"></div>
+    <div class="fg"><label class="fl">Observaciones</label><textarea id="liq-obs" rows="2" style="width:100%"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarLiq()"><i class="ti ti-check" aria-hidden="true"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast-el"><i class="ti ti-check" aria-hidden="true"></i><span id="toast-msg"></span></div>
+
+<script>
+let miCuit = ''
+let miNombre = ''
+let cpeDocs = JSON.parse(localStorage.getItem('agro-docs') || '[]')
+let liquidaciones = JSON.parse(localStorage.getItem('agro-liqs') || '[]')
+let chartEsp = null, chartMes = null
+
+const BEST = {Activo:'bg-green',Activa:'bg-green',Confirmado:'bg-blue',Confirmada:'bg-blue',
+  Pendiente:'bg-amber',Anulado:'bg-gray',Anulada:'bg-gray',Vencido:'bg-gray',Vencida:'bg-gray'}
+
+function saveLiqs(){localStorage.setItem('agro-liqs', JSON.stringify(liquidaciones))}
+function fmtKg(n){return n||n===0?Number(n).toLocaleString('es-AR')+' kg':'—'}
+function fmtFecha(s){if(!s)return'—';try{return new Date(s.slice(0,10)+'T00:00:00').toLocaleDateString('es-AR')}catch{return s}}
+function fmtUSD(n){return n?'USD '+Number(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0}):'—'}
+
+function doLogin(){
+  const cuit   = document.getElementById('login-cuit').value.trim()
+  const nombre = document.getElementById('login-nombre').value.trim()
+  if(!cuit){toast('Ingresá tu CUIT');return}
+  miCuit   = cuit
+  miNombre = nombre || cuit
+  localStorage.setItem('corr-cuit',  cuit)
+  localStorage.setItem('corr-nombre', miNombre)
+  document.getElementById('cuit-display').textContent  = cuit
+  document.getElementById('top-nombre').textContent    = miNombre
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('app').style.display = 'flex'
+  render()
+}
+
+function doLogout(){
+  miCuit = ''
+  document.getElementById('app').style.display = 'none'
+  document.getElementById('login-screen').style.display = 'flex'
+}
+
+function getMisOps(){
+  return cpeDocs.filter(d =>
+    d.cuit_corredor_venta_primaria   === miCuit ||
+    d.cuit_corredor_venta_secundaria === miCuit ||
+    d.cuit_corredor_venta            === miCuit ||
+    d.cuit_corr                      === miCuit
+  )
+}
+function getMisLiqs(){return liquidaciones.filter(l => l.cuit_corredor === miCuit)}
+
+function render(){
+  const ops  = getMisOps()
+  const liqs = getMisLiqs()
+  const tn   = ops.reduce((s,d)=>s+(d.peso_neto||0),0)
+  const com  = liqs.reduce((s,l)=>s+(l.comision||0),0)
+
+  document.getElementById('m-ops').textContent  = ops.length
+  document.getElementById('m-tn').textContent   = Math.round(tn/1000)
+  document.getElementById('m-liq').textContent  = liqs.length
+  document.getElementById('m-com').textContent  = 'USD '+Math.round(com).toLocaleString('es-AR')
+
+  renderOps(ops)
+  renderLiqs(liqs)
+  buildCharts(ops)
+}
+
+function renderOps(ops){
+  const el = document.getElementById('lista-ops')
+  if(!ops.length){
+    el.innerHTML = '<div class="empty"><i class="ti ti-link-off" aria-hidden="true"></i>No hay operaciones con tu CUIT. Asegurate de que te carguen como corredor en las CPEs.</div>'
+    return
+  }
+  el.innerHTML = ops.map(d => `
+    <div style="border:1px solid var(--brd);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-family:monospace;font-size:12px;color:var(--purp)">${d.tipo} N° ${d.numero}</span>
+          <span class="badge ${BEST[d.estado]||'bg-gray'}">${d.estado}</span>
+        </div>
+        <div style="font-size:14px;font-weight:500">${d.especie} <span style="font-weight:400;font-size:12px;color:var(--txt2)">${d.cosecha}</span></div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:2px">${d.razon_social_remitente||d.cuit_remitente||'—'} → ${d.razon_social_destinatario||d.cuit_destinatario||'—'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-weight:600">${fmtKg(d.peso_neto)}</div>
+        <div style="font-size:11px;color:var(--txt2)">${fmtFecha(d.fecha_emision)}</div>
+      </div>
+    </div>`).join('')
+}
+
+function renderLiqs(liqs){
+  const el = document.getElementById('lista-liqs')
+  if(!liqs.length){
+    el.innerHTML = '<div class="empty"><i class="ti ti-receipt" aria-hidden="true"></i>Sin liquidaciones. Usá el botón "Nueva liquidación" para registrar una.</div>'
+    return
+  }
+  el.innerHTML = liqs.slice().reverse().map(l => `
+    <div class="liq-card">
+      <div class="liq-header">
+        <div style="width:36px;height:36px;background:var(--pcl);border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="ti ti-receipt" style="color:var(--purp);font-size:18px" aria-hidden="true"></i>
+        </div>
+        <div class="liq-info">
+          <div class="liq-especie">${l.especie} <span style="font-weight:400;font-size:12px;color:var(--txt2)">${l.cosecha}</span></div>
+          <div class="liq-meta">${fmtFecha(l.fecha)} · ${l.tn} tn · ${l.precio} USD/tn</div>
+        </div>
+        <div class="liq-monto">
+          <div class="liq-monto-val">${fmtUSD(l.comision)}</div>
+          <div class="liq-monto-label">${l.pct_comision}% comisión</div>
+        </div>
+      </div>
+      <div class="liq-body">
+        <div class="lf"><div class="lf-label">Vendedor (CUIT)</div><div class="lf-val" style="font-family:monospace;font-size:11px">${l.cuit_vendedor||'—'}</div></div>
+        <div class="lf"><div class="lf-label">Comprador (CUIT)</div><div class="lf-val" style="font-family:monospace;font-size:11px">${l.cuit_comprador||'—'}</div></div>
+        <div class="lf"><div class="lf-label">CPE/CTG asociado</div><div class="lf-val" style="font-family:monospace;font-size:11px">${l.cpe_num||'—'}</div></div>
+      </div>
+      ${l.observaciones ? `<div style="padding:0 14px 12px;font-size:12px;color:var(--txt2)">${l.observaciones}</div>` : ''}
+      <div class="liq-footer">
+        <span class="badge bg-purp">Corredor</span>
+        <button class="btn btn-sm" onclick="eliminarLiq('${l.id}')"><i class="ti ti-trash" aria-hidden="true"></i> Eliminar</button>
+      </div>
+    </div>`).join('')
+}
+
+function buildCharts(ops){
+  const COLS = ['#3C3489','#1D9E75','#BA7517','#185FA5','#A32D2D','#0F6E56']
+  const por_esp = {}
+  ops.forEach(d=>{const e=d.especie||'?';por_esp[e]=(por_esp[e]||0)+(d.peso_neto||0)})
+  const esp_sorted = Object.entries(por_esp).sort((a,b)=>b[1]-a[1])
+
+  if(chartEsp) chartEsp.destroy()
+  chartEsp = new Chart(document.getElementById('chart-esp'),{
+    type:'doughnut',
+    data:{labels:esp_sorted.map(x=>x[0]),datasets:[{data:esp_sorted.map(x=>Math.round(x[1]/1000)),backgroundColor:COLS,borderWidth:0}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed+' tn'}}},cutout:'65%',responsive:true,maintainAspectRatio:true}
+  })
+
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  const por_mes = new Array(12).fill(0)
+  ops.forEach(d=>{if(d.fecha_emision){const m=parseInt(d.fecha_emision.slice(5,7))-1;if(m>=0&&m<12)por_mes[m]++}})
+
+  if(chartMes) chartMes.destroy()
+  chartMes = new Chart(document.getElementById('chart-mes'),{
+    type:'bar',
+    data:{labels:meses,datasets:[{label:'Operaciones',data:por_mes,backgroundColor:'#EEEDFE',borderColor:'#3C3489',borderWidth:1.5,borderRadius:4}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{stepSize:1},grid:{color:'rgba(0,0,0,.05)'}},x:{grid:{display:false}}},responsive:true,maintainAspectRatio:true}
+  })
+}
+
+function showTab(id, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'))
+  el.classList.add('active')
+  document.getElementById('tab-'+id).classList.add('active')
+}
+
+function calcComision(){
+  const tn    = parseFloat(document.getElementById('liq-tn').value)||0
+  const prec  = parseFloat(document.getElementById('liq-precio').value)||0
+  const pct   = parseFloat(document.getElementById('liq-pct').value)||0
+  const com   = tn * prec * pct / 100
+  document.getElementById('liq-com').value = com > 0 ? Math.round(com) : ''
+}
+
+function abrirModalLiq(){
+  document.getElementById('modal-liq').classList.add('open')
+}
+function cerrarModal(){
+  document.getElementById('modal-liq').classList.remove('open')
+}
+
+function guardarLiq(){
+  const esp     = document.getElementById('liq-esp').value
+  const cos     = document.getElementById('liq-cos').value
+  const tn      = parseFloat(document.getElementById('liq-tn').value)
+  const precio  = parseFloat(document.getElementById('liq-precio').value)
+  const pct     = parseFloat(document.getElementById('liq-pct').value)||1.5
+  if(!tn || !precio){toast('Completá toneladas y precio');return}
+  const com = Math.round(tn * precio * pct / 100)
+  liquidaciones.push({
+    id: Date.now().toString(),
+    cuit_corredor: miCuit,
+    especie: esp, cosecha: cos, tn, precio, pct_comision: pct, comision: com,
+    cuit_vendedor:  document.getElementById('liq-vendedor').value,
+    cuit_comprador: document.getElementById('liq-comprador').value,
+    cpe_num:        document.getElementById('liq-cpe-num').value,
+    observaciones:  document.getElementById('liq-obs').value,
+    fecha: new Date().toISOString().slice(0,10)
+  })
+  saveLiqs()
+  cerrarModal()
+  toast('Liquidación guardada — '+fmtUSD(com))
+  render()
+  showTab('liquidaciones', document.querySelectorAll('.tab')[1])
+}
+
+function eliminarLiq(id){
+  if(!confirm('¿Eliminar esta liquidación?')) return
+  liquidaciones = liquidaciones.filter(l=>l.id!==id)
+  saveLiqs(); render()
+  toast('Liquidación eliminada')
+}
+
+function toast(msg){
+  const el=document.getElementById('toast-el')
+  document.getElementById('toast-msg').textContent=msg
+  el.classList.add('show')
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3000)
+}
+
+// Auto-login
+const sc = localStorage.getItem('corr-cuit')
+const sn = localStorage.getItem('corr-nombre')
+if(sc){document.getElementById('login-cuit').value=sc;document.getElementById('login-nombre').value=sn||'';doLogin()}
+
+// Datos demo
+if(!liquidaciones.some(l=>l.cuit_corredor==='20-28765432-1')){
+  const demo=[
+    {id:'l1',cuit_corredor:'20-28765432-1',especie:'Soja',cosecha:'2024/2025',tn:185,precio:285,pct_comision:1.5,comision:7909,cuit_vendedor:'30-71234567-0',cuit_comprador:'30-65432100-9',cpe_num:'74001234567',observaciones:'Venta directa campo-aceitera',fecha:'2025-03-15'},
+    {id:'l2',cuit_corredor:'20-28765432-1',especie:'Maíz',cosecha:'2024/2025',tn:245,precio:195,pct_comision:1.5,comision:7166,cuit_vendedor:'30-71234567-0',cuit_comprador:'30-88888888-0',cpe_num:'CTG42987654',observaciones:'',fecha:'2025-03-10'},
+    {id:'l3',cuit_corredor:'20-28765432-1',especie:'Trigo',cosecha:'2024/2025',tn:218,precio:240,pct_comision:1.2,comision:6278,cuit_vendedor:'30-71234567-0',cuit_comprador:'30-55555555-0',cpe_num:'74009876543',observaciones:'',fecha:'2025-03-01'},
+  ]
+  liquidaciones = [...liquidaciones, ...demo]
+  saveLiqs()
+}
+</script>
+</body>
+</html>
