@@ -3,8 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgroGestión — CTG y Carta de Porte Electrónica</title>
-<meta name="description" content="Emitís, confirmás y trazás el transporte de granos desde el campo hasta la planta destino. CTG y Carta de Porte Electrónica integrados con ARCA.">
+<title>AgroGestión — Carta de Porte Electrónica y CTG para granos | ARCA 2026</title>
+<meta name="description" content="Emitís CTG y Carta de Porte Electrónica de granos integrado con ARCA en minutos. Portales para productor, destinatario, transportista y corredor. Cumplí con RG 5017/2021 y SISA 2026. 1 mes gratis sin tarjeta.">
+<meta name="keywords" content="carta de porte electronica, CTG granos, ARCA, SISA, transporte granos Argentina, CPE granos, sistema agropecuario, RG 5017 2021, carta de porte electronica granos, emitir CPE online">
+<link rel="canonical" href="https://agroportecloud.vercel.app/">
+<meta name="robots" content="index, follow">
+<meta name="author" content="AgroGestión">
+<meta name="geo.region" content="AR">
+<meta name="geo.placename" content="Argentina">
+<meta name="language" content="es-AR">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://agroportecloud.vercel.app/">
+<meta property="og:title" content="AgroGestión — CTG y Carta de Porte Electrónica para granos">
+<meta property="og:description" content="Emitís tu primera Carta de Porte en minutos. Portales para productor, destinatario, transportista y corredor. 1 mes gratis sin tarjeta.">
+<meta property="og:image" content="https://agroportecloud.vercel.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_AR">
+<meta property="og:site_name" content="AgroGestión">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AgroGestión — CTG y Carta de Porte Electrónica">
+<meta name="twitter:description" content="Emitís CTG y CPE integrado con ARCA. Portales para cada actor del campo. 1 mes gratis.">
+<meta name="twitter:image" content="https://agroportecloud.vercel.app/og-image.png">
+
+<!-- Google Analytics 4 — reemplazar G-XXXXXXXXXX -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js',new Date());
+  gtag('config','G-XXXXXXXXXX');
+</script>
+
+<!-- Schema: SoftwareApplication -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"AgroGestión","applicationCategory":"BusinessApplication","operatingSystem":"Web, iOS, Android","description":"Sistema de gestión de CTG y Carta de Porte Electrónica para el transporte de granos en Argentina. Integración directa con ARCA y cumplimiento de RG 5017/2021 y SISA 2026.","url":"https://agroportecloud.vercel.app","inLanguage":"es-AR","offers":[{"@type":"Offer","name":"Plan Campo","price":"29","priceCurrency":"USD","availability":"https://schema.org/InStock"},{"@type":"Offer","name":"Plan Empresa","price":"79","priceCurrency":"USD","availability":"https://schema.org/InStock"},{"@type":"Offer","name":"Portales de acceso","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock"}]}
+</script>
+
+<!-- Schema: FAQPage -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"¿Qué es la Carta de Porte Electrónica?","acceptedAnswer":{"@type":"Answer","text":"La Carta de Porte Electrónica (CPE) es el documento obligatorio para el transporte de granos en Argentina según la RG 5017/2021 de ARCA. Reemplaza el papel y genera automáticamente un Código de Trazabilidad de Granos (CTG)."}},{"@type":"Question","name":"¿Quiénes pueden emitir una CPE en 2026?","acceptedAnswer":{"@type":"Answer","text":"Desde la RG Conjunta 5821/2026, solo pueden emitir CPE los operadores inscriptos en el SISA con estado de planta activo. El RUCA fue eliminado en 2025."}},{"@type":"Question","name":"¿Cuánto cuesta AgroGestión?","acceptedAnswer":{"@type":"Answer","text":"Plan Campo desde USD 29/mes y Plan Empresa desde USD 79/mes. Incluye 1 mes gratis para que pruebes durante un ciclo completo de cosecha, sin tarjeta de crédito."}},{"@type":"Question","name":"¿El destinatario y transportista también deben pagar?","acceptedAnswer":{"@type":"Answer","text":"No. El acceso para destinatarios, transportistas y corredores es siempre gratuito. Tienen portales propios incluidos en el plan del operador."}}]}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -215,6 +258,7 @@ nav{padding:0 48px;height:60px;display:flex;align-items:center;justify-content:s
 function openModal(id){
   var m=document.getElementById('modal-'+id);
   if(m){m.classList.add('open');document.body.style.overflow='hidden'}
+  if(typeof gtag!=='undefined'){gtag('event','lead',{event_category:'registro',event_label:id})}
 }
 function closeModal(id){
   var m=document.getElementById('modal-'+id);
