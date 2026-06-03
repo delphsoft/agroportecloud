@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /agro_carta_porte_v3.html
+
+Sitemap: https://agroportecloud.vercel.app/sitemap.xml
