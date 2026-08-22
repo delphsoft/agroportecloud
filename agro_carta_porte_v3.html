@@ -136,6 +136,10 @@ tr:hover td{background:var(--bg2)}
 
       <!-- DASHBOARD -->
       <div class="panel active" id="panel-dashboard">
+        <div class="abar vis" id="banner-venc" style="display:none;background:var(--amcl);border:1px solid var(--amb);border-radius:var(--r);margin-bottom:16px;padding:10px 14px">
+          <span id="banner-venc-txt"></span>
+          <button class="btn btn-sm" onclick="showPanel('historial',document.querySelectorAll('.nav-item')[5])"><i class="ti ti-arrow-right"></i> Ver</button>
+        </div>
         <div class="cards-row">
           <div class="mc"><div class="mc-label">CTG activos</div><div class="mc-val" style="color:var(--verde)" id="m-ctg">0</div><div class="mc-sub">en curso</div><i class="ti ti-file-certificate mc-icon"></i></div>
           <div class="mc"><div class="mc-label">CPE emitidas</div><div class="mc-val" style="color:var(--azul)" id="m-cpe">0</div><div class="mc-sub">total</div><i class="ti ti-file-description mc-icon"></i></div>
@@ -194,10 +198,12 @@ tr:hover td{background:var(--bg2)}
               <div class="fg"><label class="fl">Cosecha <span class="req">*</span></label><select id="ctg-cos"><option>2024/2025</option><option>2023/2024</option><option>2025/2026</option></select></div>
               <div class="fg"><label class="fl">Grado</label><select id="ctg-grd"><option>Grado 1</option><option>Grado 2</option><option>Grado 3</option><option>Fuera de estándar</option></select></div>
             </div>
-            <div class="fr2">
-              <div class="fg"><label class="fl">Peso neto declarado (kg) <span class="req">*</span></label><input type="number" id="ctg-peso" placeholder="18500"></div>
-              <div class="fg"><label class="fl">Km a recorrer</label><input type="number" id="ctg-km" placeholder="320"></div>
+            <div class="fr3">
+              <div class="fg"><label class="fl">Peso bruto declarado (kg) <span class="req">*</span></label><input type="number" id="ctg-bruto" placeholder="31500" oninput="calcNetoCTG()"></div>
+              <div class="fg"><label class="fl">Tara (kg)</label><input type="number" id="ctg-tara" placeholder="13200" oninput="calcNetoCTG()"></div>
+              <div class="fg"><label class="fl">Peso neto (kg)</label><input type="number" id="ctg-peso" placeholder="Auto" readonly style="color:var(--verde);font-weight:600"></div>
             </div>
+            <div class="fg"><label class="fl">Km a recorrer</label><input type="number" id="ctg-km" placeholder="320"></div>
           </div>
           <div class="sdiv">Origen y destino</div>
           <div class="fgrid">
@@ -214,10 +220,15 @@ tr:hover td{background:var(--bg2)}
           <div class="sdiv">Transporte</div>
           <div class="fgrid">
             <div class="fr3">
-              <div class="fg"><label class="fl">Patente vehículo <span class="req">*</span></label><input type="text" id="ctg-pat" placeholder="AB123CD" oninput="this.value=this.value.toUpperCase()"></div>
-              <div class="fg"><label class="fl">CUIT transportista</label><input type="text" id="ctg-ctrans" placeholder="20-28765432-1"></div>
+              <div class="fg"><label class="fl">Modo de transporte <span class="req">*</span></label><select id="ctg-modo"><option value="Automotor">Automotor</option><option value="Ferroviario">Ferroviario</option></select></div>
+              <div class="fg"><label class="fl">Configuración vehicular <span class="req">*</span></label><select id="ctg-config-veh"></select></div>
               <div class="fg"><label class="fl">Código CTG ARCA (si ya existe)</label><input type="text" id="ctg-num-arca" placeholder="Dejar vacío si es nuevo"></div>
             </div>
+            <div class="fr3">
+              <div class="fg"><label class="fl">Patente vehículo <span class="req">*</span></label><input type="text" id="ctg-pat" placeholder="AB123CD" oninput="this.value=this.value.toUpperCase()"></div>
+              <div class="fg"><label class="fl">CUIT transportista</label><input type="text" id="ctg-ctrans" placeholder="20-28765432-1"></div>
+            </div>
+            <div class="ibox" id="ctg-peso-max-info"><i class="ti ti-scale"></i> Elegí una configuración vehicular para ver el peso bruto máximo admitido (Decreto 32/2018).</div>
           </div>
           <div class="fftr">
             <button class="btn" onclick="limpiar('ctg')"><i class="ti ti-eraser"></i> Limpiar</button>
@@ -230,6 +241,19 @@ tr:hover td{background:var(--bg2)}
       <div class="panel" id="panel-nueva-cpe">
         <div class="sc">
           <div class="sc-hdr"><span class="sc-title"><i class="ti ti-file-description" style="color:var(--azul)"></i> Emitir Carta de Porte Electrónica — RG 5017/2021</span></div>
+          <div class="sdiv">Régimen documental</div>
+          <div class="fgrid">
+            <div class="fg"><label class="fl">Régimen <span class="req">*</span></label>
+              <select id="cpe-regimen" onchange="toggleCpedg()">
+                <option value="Grano">Carta de Porte de Granos (CPE)</option>
+                <option value="CPEDG">CPEDG — Carta de Porte de Derivados Granarios</option>
+              </select>
+            </div>
+            <div class="fg" id="cpe-cpedg-box" style="display:none;flex-direction:row;align-items:center;gap:8px">
+              <input type="checkbox" class="cb" id="cpe-cpedg-sisa-ok">
+              <label class="fl" style="margin:0" for="cpe-cpedg-sisa-ok">Confirmo que el destinatario es un operador inscripto en SISA (requisito exclusivo de la CPEDG, RG Conjunta 5821/2026)</label>
+            </div>
+          </div>
           <div class="sdiv">Datos del grano</div>
           <div class="fgrid">
             <div class="fr3">
@@ -263,15 +287,21 @@ tr:hover td{background:var(--bg2)}
           <div class="sdiv">Transporte</div>
           <div class="fgrid">
             <div class="fr3">
+              <div class="fg"><label class="fl">Modo de transporte <span class="req">*</span></label><select id="cpe-modo" onchange="actualizarVigenciaInfo()"><option value="Automotor">Automotor</option><option value="Ferroviario">Ferroviario</option></select></div>
+              <div class="fg"><label class="fl">Configuración vehicular <span class="req">*</span></label><select id="cpe-config-veh"></select></div>
               <div class="fg"><label class="fl">CUIT transportista <span class="req">*</span></label><input type="text" id="cpe-ctrans" placeholder="20-28765432-1"></div>
+            </div>
+            <div class="fr3">
               <div class="fg"><label class="fl">Dominio vehículo <span class="req">*</span></label><input type="text" id="cpe-dom" placeholder="AB123CD" oninput="this.value=this.value.toUpperCase()"></div>
               <div class="fg"><label class="fl">Dominio acoplado</label><input type="text" id="cpe-acop" placeholder="EF456GH" oninput="this.value=this.value.toUpperCase()"></div>
+              <div class="fg"><label class="fl">Km a recorrer</label><input type="number" id="cpe-km" placeholder="320"></div>
             </div>
             <div class="fr2">
               <div class="fg"><label class="fl">Fecha de partida</label><input type="date" id="cpe-fpart"></div>
-              <div class="fg"><label class="fl">Km a recorrer</label><input type="number" id="cpe-km" placeholder="320"></div>
+              <div class="fg"><label class="fl">CTG asociado (número)</label><input type="text" id="cpe-ctg" placeholder="42987654 — dejar vacío si no aplica"></div>
             </div>
-            <div class="fg"><label class="fl">CTG asociado (número)</label><input type="text" id="cpe-ctg" placeholder="42987654 — dejar vacío si no aplica"></div>
+            <div class="ibox" id="cpe-vigencia-info"><i class="ti ti-calendar-time"></i> Vigencia: 5 días corridos desde la emisión (Automotor). Extensible solo declarando Contingencia.</div>
+            <div class="ibox" id="cpe-peso-max-info"><i class="ti ti-scale"></i> Elegí una configuración vehicular para ver el peso bruto máximo admitido (Decreto 32/2018).</div>
           </div>
           <div class="sdiv">Cadena comercial (opcional)</div>
           <div class="fgrid">
@@ -359,6 +389,18 @@ tr:hover td{background:var(--bg2)}
               <div class="fg"><label class="fl">Cosecha por defecto</label><select id="cfg-cos" onchange="saveConfig()"><option>2024/2025</option><option>2023/2024</option><option>2025/2026</option></select></div>
             </div>
           </div>
+          <div class="sdiv">Habilitación SISA (RG Conjunta 5821/2026)</div>
+          <div class="fgrid">
+            <div class="fr2">
+              <div class="fg"><label class="fl">Estado inscripción SISA <span class="req">*</span></label><select id="cfg-sisa-estado" onchange="saveConfig()"><option value="">No verificado</option><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select></div>
+              <div class="fg"><label class="fl">N° de planta SISA <span class="req">*</span></label><input type="text" id="cfg-sisa-planta" placeholder="Ej. 3" oninput="saveConfig()"></div>
+            </div>
+            <div class="fg" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="checkbox" class="cb" id="cfg-sisa-planta-activa" onchange="saveConfig()">
+              <label class="fl" style="margin:0" for="cfg-sisa-planta-activa">La planta declarada tiene estado <strong>activo</strong> en SISA</label>
+            </div>
+            <div class="ibox"><i class="ti ti-alert-triangle"></i> Desde la RG Conjunta 5821/2026 el RUCA fue eliminado. La habilitación para emitir CTG/CPE pasa exclusivamente por el SISA, y no alcanza con estar inscripto: la planta específica debe figurar como <strong>activa</strong>. Sin estos tres datos completos, el sistema no permite registrar ni emitir documentos.</div>
+          </div>
           <div class="sdiv">Backend ARCA (producción)</div>
           <div class="fgrid">
             <div class="fr2">
@@ -419,6 +461,23 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- Modal contingencia -->
+<div class="modal-bg" id="modal-contingencia">
+  <div class="modal">
+    <div class="modal-title">Declarar Contingencia</div>
+    <div class="modal-sub" id="m-cont-sub"></div>
+    <div class="fg" style="margin-bottom:20px">
+      <label class="fl">Motivo de la contingencia <span class="req">*</span></label>
+      <textarea id="motivo-cont" rows="3" placeholder="Ej: Demora en ruta por corte de acceso, no se pudo confirmar arribo en plazo." style="width:100%;margin-top:6px"></textarea>
+      <div class="ibox" style="margin-top:10px" id="cont-nueva-vig"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="cerrarModal('modal-contingencia')">Cancelar</button>
+      <button class="btn btn-blue" onclick="confirmarContingencia()"><i class="ti ti-shield-check"></i> Declarar contingencia</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast-el"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
 
@@ -428,7 +487,64 @@ let docs = JSON.parse(localStorage.getItem('agro-docs')||'[]')
 let sel = new Set()
 let docsV = []
 let docConfId = null
+let docContId = null
 let charts = {}
+
+// ⚠️ Peso bruto total (PBT) máximo por configuración vehicular — Decreto 32/2018.
+// Valores de referencia usados para el chequeo preventivo. Verificar contra el
+// Anexo I del Decreto 32/2018 (y sus actualizaciones) antes de usarlos como
+// límite definitivo en producción / integración con ARCA.
+const PESO_MAX_KG = {
+  'Camión simple (2 ejes)': 30000,
+  'Camión con acoplado (4-5 ejes)': 45000,
+  'Semirremolque articulado (5-6 ejes)': 45000,
+  'Bitrén 7 ejes': 57000,
+  'Bitrén 9 ejes': 75000,
+}
+// Vigencia por modo de transporte (días corridos desde la emisión).
+const VIGENCIA_DIAS = {Automotor:5, Ferroviario:30}
+
+function poblarConfigVehicular(){
+  const opts='<option value="">Seleccionar...</option>'+Object.keys(PESO_MAX_KG).map(k=>`<option value="${k}">${k} — máx. ${Number(PESO_MAX_KG[k]).toLocaleString('es-AR')} kg</option>`).join('')
+  ;['ctg-config-veh','cpe-config-veh'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts})
+}
+
+// ── SISA (RG Conjunta 5821/2026) ────────────────────────────────
+// El RUCA fue eliminado en 2025. Hoy la habilitación para emitir CTG/CPE pasa
+// exclusivamente por el SISA, y requiere que la planta declarada esté activa.
+function getSisaConfig(){
+  try{return JSON.parse(localStorage.getItem('agro-cfg')||'{}')}catch(e){return {}}
+}
+function sisaHabilitado(){
+  const c=getSisaConfig()
+  return c.sisa_estado==='Activo' && !!c.sisa_planta && c.sisa_planta_activa===true
+}
+
+// ── Peso máximo por configuración vehicular ─────────────────────
+function validarPesoMaximo(config,pesoBrutoKg){
+  const max=PESO_MAX_KG[config]
+  if(!max)return {ok:false,motivo:'Elegí una configuración vehicular.'}
+  if(pesoBrutoKg>max)return {ok:false,motivo:`El peso bruto declarado (${Number(pesoBrutoKg).toLocaleString('es-AR')} kg) supera el máximo admitido para "${config}" según Decreto 32/2018 (${Number(max).toLocaleString('es-AR')} kg).`}
+  return {ok:true}
+}
+
+// ── Vigencia / vencimiento ───────────────────────────────────────
+function calcVigencia(modo){
+  const dias=VIGENCIA_DIAS[modo]||VIGENCIA_DIAS.Automotor
+  const v=new Date();v.setDate(v.getDate()+dias)
+  return v.toISOString().slice(0,10)
+}
+function diasRestantes(d){
+  if(!d.vigencia_hasta)return null
+  const hoy=new Date().toISOString().slice(0,10)
+  return Math.ceil((new Date(d.vigencia_hasta+'T00:00:00')-new Date(hoy+'T00:00:00'))/86400000)
+}
+function estadoEfectivo(d){
+  if(['Anulado','Anulada','Confirmado','Confirmada'].includes(d.estado))return d.estado
+  const dr=diasRestantes(d)
+  if(dr!==null && dr<0)return d.tipo==='CTG'?'Vencido':'Vencida'
+  return d.estado
+}
 
 function saveDocs(){localStorage.setItem('agro-docs',JSON.stringify(docs))}
 
@@ -458,19 +574,42 @@ function calcNeto(){
   const t=parseFloat(document.getElementById('cpe-tara').value)||0
   document.getElementById('cpe-neto').value=b-t>0?b-t:''
 }
+function calcNetoCTG(){
+  const b=parseFloat(document.getElementById('ctg-bruto').value)||0
+  const t=parseFloat(document.getElementById('ctg-tara').value)||0
+  document.getElementById('ctg-peso').value=b-t>0?b-t:''
+}
+
+function toggleCpedg(){
+  const regimen=document.getElementById('cpe-regimen').value
+  document.getElementById('cpe-cpedg-box').style.display=regimen==='CPEDG'?'flex':'none'
+}
+function actualizarVigenciaInfo(){
+  const modo=document.getElementById('cpe-modo').value
+  const dias=VIGENCIA_DIAS[modo]||5
+  document.getElementById('cpe-vigencia-info').innerHTML=`<i class="ti ti-calendar-time"></i> Vigencia: ${dias} días corridos desde la emisión (${modo}). Extensible solo declarando Contingencia.`
+}
 
 function limpiar(tipo){
   document.querySelectorAll('#panel-nueva-'+tipo+' input, #panel-nueva-'+tipo+' textarea')
     .forEach(el=>{if(!el.readOnly)el.value=''})
+  if(tipo==='cpe'){document.getElementById('cpe-cpedg-sisa-ok').checked=false;toggleCpedg();actualizarVigenciaInfo()}
 }
 
 function guardarCTG(){
-  const peso=document.getElementById('ctg-peso').value
+  if(!sisaHabilitado()){toast('No podés emitir: falta habilitación SISA (planta activa) en Configuración','err');return}
+  const bruto=document.getElementById('ctg-bruto').value
   const rem=document.getElementById('ctg-crem').value
   const dest=document.getElementById('ctg-cdest').value
-  if(!peso||!rem||!dest){toast('Completá campos obligatorios','err');return}
+  const configVeh=document.getElementById('ctg-config-veh').value
+  if(!bruto||!rem||!dest||!configVeh){toast('Completá campos obligatorios','err');return}
+  const b=parseInt(bruto)||0,t=parseInt(document.getElementById('ctg-tara').value)||0
+  const pesoVal=b-t
+  const chk=validarPesoMaximo(configVeh,b)
+  if(!chk.ok){toast(chk.motivo,'err');return}
+  const modo=document.getElementById('ctg-modo').value
   const hoy=new Date().toISOString().slice(0,10)
-  const vig=new Date();vig.setDate(vig.getDate()+3)
+  const vig=calcVigencia(modo)
   const numArca=document.getElementById('ctg-num-arca').value.trim()
   const num=numArca||('CTG'+Math.floor(Math.random()*90000000+10000000))
   docs.unshift({id:Date.now().toString(),tipo:'CTG',numero:num,
@@ -481,22 +620,34 @@ function guardarCTG(){
     cuit_transportista:document.getElementById('ctg-ctrans').value,
     establecimiento:document.getElementById('ctg-estab').value,
     km_a_recorrer:document.getElementById('ctg-km').value,
-    peso_neto:parseInt(peso),fecha_emision:hoy,vigencia_hasta:vig.toISOString().slice(0,10)
+    modo_transporte:modo,configuracion_vehicular:configVeh,
+    peso_bruto_declarado:b,peso_tara:t,
+    peso_neto:pesoVal,fecha_emision:hoy,vigencia_hasta:vig
   })
   saveDocs();metricas();toast('CTG registrada: '+num);limpiar('ctg')
 }
 
 function guardarCPE(){
+  if(!sisaHabilitado()){toast('No podés emitir: falta habilitación SISA (planta activa) en Configuración','err');return}
   const rsRem=document.getElementById('cpe-rsrem').value
   const cRem=document.getElementById('cpe-crem').value
   const cDest=document.getElementById('cpe-cdest').value
   const bruto=document.getElementById('cpe-bruto').value
-  if(!rsRem||!cRem||!cDest||!bruto){toast('Completá campos obligatorios','err');return}
+  const configVeh=document.getElementById('cpe-config-veh').value
+  const regimen=document.getElementById('cpe-regimen').value
+  if(!rsRem||!cRem||!cDest||!bruto||!configVeh){toast('Completá campos obligatorios','err');return}
+  if(regimen==='CPEDG' && !document.getElementById('cpe-cpedg-sisa-ok').checked){
+    toast('La CPEDG es exclusiva para traslados entre operadores inscriptos en SISA: confirmá el chequeo del destinatario','err');return
+  }
   const b=parseInt(bruto)||0,t=parseInt(document.getElementById('cpe-tara').value)||0
+  const chk=validarPesoMaximo(configVeh,b)
+  if(!chk.ok){toast(chk.motivo,'err');return}
+  const modo=document.getElementById('cpe-modo').value
   const hoy=new Date().toISOString().slice(0,10)
-  const vig=new Date();vig.setDate(vig.getDate()+2)
+  const vig=calcVigencia(modo)
   const num='74'+String(Math.floor(Math.random()*9000000000+1000000000))
-  docs.unshift({id:Date.now().toString(),tipo:'CPE',numero:num,
+  docs.unshift({id:Date.now().toString(),tipo:'CPE',numero:num,regimen:regimen,
+    modo_transporte:modo,configuracion_vehicular:configVeh,
     especie:document.getElementById('cpe-esp').value,cosecha:document.getElementById('cpe-cos').value,
     tipo_grano:document.getElementById('cpe-tgr').value,estado:'Activa',
     razon_social_remitente:rsRem,cuit_remitente:cRem,
@@ -521,26 +672,66 @@ function guardarCPE(){
     porcentaje_zaranda:document.getElementById('cpe-zar').value,
     observaciones:document.getElementById('cpe-obs').value,
     establecimiento:document.getElementById('cpe-estab').value,
-    fecha_emision:hoy,vigencia_hasta:vig.toISOString().slice(0,10)
+    fecha_emision:hoy,vigencia_hasta:vig
   })
   saveDocs();metricas();toast('CPE emitida: '+num);limpiar('cpe')
 }
 
 // ── Dashboard ────────────────────────────────────────────────────
+// Tag CPEDG junto al tipo de documento
+function tipoTag(d){
+  return `<span class="tp ${d.tipo==='CTG'?'bg-purp':'bg-blue'}">${d.tipo}</span>`+
+    (d.regimen==='CPEDG'?' <span class="badge bg-amb">CPEDG</span>':'')+
+    (d.contingencias?.length?' <span class="badge bg-red" title="Contingencia declarada"><i class="ti ti-shield-check"></i></span>':'')
+}
+// Celda de acciones: Confirmar arribo y/o Declarar contingencia
+function accionesDoc(d){
+  const ef=estadoEfectivo(d)
+  const dr=diasRestantes(d)
+  const btns=[]
+  if(['Activo','Activa','Pendiente'].includes(ef)){
+    btns.push(`<button class="confirm-btn" onclick="abrirModalConf('${d.id}')"><i class="ti ti-check"></i> Confirmar</button>`)
+  }
+  if(ef==='Vencido'||ef==='Vencida'||(dr!==null&&dr<=1&&['Activo','Activa','Pendiente'].includes(ef))){
+    btns.push(`<button class="confirm-btn" style="border-color:var(--rbrd);color:var(--rbrd)" onclick="abrirModalContingencia('${d.id}')"><i class="ti ti-shield-check"></i> Contingencia</button>`)
+  }
+  return btns.length?btns.join(' '):'—'
+}
+
 function renderDash(){
   const tb=document.getElementById('dash-tabla')
   const rec=docs.slice(0,8)
   if(!rec.length){tb.innerHTML='<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--txt2)">Sin documentos. Creá tu primera CTG o CPE.</td></tr>';return}
-  tb.innerHTML=rec.map(d=>`<tr>
-    <td><span class="tp ${d.tipo==='CTG'?'bg-purp':'bg-blue'}">${d.tipo}</span></td>
+  tb.innerHTML=rec.map(d=>{const ef=estadoEfectivo(d);return `<tr>
+    <td>${tipoTag(d)}</td>
     <td style="font-family:monospace;font-size:12px">${d.numero}</td>
     <td style="font-weight:500">${d.especie}</td>
     <td style="font-size:12px;color:var(--txt2)">${d.cuit_remitente||'—'}</td>
     <td style="font-weight:500">${fmtKg(d.peso_neto)}</td>
-    <td><span class="badge ${BEST[d.estado]||'bg-gray'}">${d.estado}</span></td>
+    <td><span class="badge ${BEST[ef]||'bg-gray'}">${ef}</span></td>
     <td style="font-size:12px;color:var(--txt2)">${fmtFecha(d.vigencia_hasta)}</td>
-    <td>${['Activo','Activa','Pendiente'].includes(d.estado)?`<button class="confirm-btn" onclick="abrirModalConf('${d.id}')"><i class="ti ti-check"></i> Confirmar</button>`:'—'}</td>
-  </tr>`).join('')
+    <td style="white-space:nowrap;display:flex;gap:4px">${accionesDoc(d)}</td>
+  </tr>`}).join('')
+  renderVencimientos()
+}
+
+// ── Vencimientos próximos ────────────────────────────────────────
+function renderVencimientos(){
+  const banner=document.getElementById('banner-venc')
+  if(!banner)return
+  const criticos=docs.filter(d=>{
+    if(!['Activo','Activa','Pendiente'].includes(d.estado))return false
+    const dr=diasRestantes(d)
+    return dr!==null && dr<=1
+  })
+  if(!criticos.length){banner.style.display='none';return}
+  const vencidos=criticos.filter(d=>diasRestantes(d)<0).length
+  const porVencer=criticos.length-vencidos
+  const partes=[]
+  if(vencidos)partes.push(`${vencidos} vencido${vencidos!==1?'s':''}`)
+  if(porVencer)partes.push(`${porVencer} por vencer en las próximas 24hs`)
+  document.getElementById('banner-venc-txt').innerHTML=`<i class="ti ti-alert-triangle"></i> <strong>${criticos.length} documento${criticos.length!==1?'s':''}</strong> requiere${criticos.length===1?'':'n'} atención (${partes.join(' · ')}). Declará Contingencia para extender la vigencia.`
+  banner.style.display='flex'
 }
 
 // ── Métricas ─────────────────────────────────────────────────────
@@ -573,7 +764,7 @@ function buildCharts(){
   // Estado
   const ESTADOS=['Activo','Activa','Confirmado','Confirmada','Pendiente','Anulado','Anulada','Vencido','Vencida']
   const ECOLS={'Activo':'#1D9E75','Activa':'#1D9E75','Confirmado':'#185FA5','Confirmada':'#185FA5','Pendiente':'#BA7517','Anulado':'#A32D2D','Anulada':'#A32D2D','Vencido':'#888780','Vencida':'#888780'}
-  const cnt={}; docs.forEach(d=>{cnt[d.estado]=(cnt[d.estado]||0)+1})
+  const cnt={}; docs.forEach(d=>{const ef=estadoEfectivo(d);cnt[ef]=(cnt[ef]||0)+1})
   const est_sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1])
   if(charts.estado)charts.estado.destroy()
   charts.estado=new Chart(document.getElementById('chart-estado'),{
@@ -617,19 +808,17 @@ function renderHist(data){
   const ftr=document.getElementById('hist-ftr')
   if(!data.length){empty.style.display='block';table.style.display='none';ftr.textContent='';return}
   table.style.display='table';empty.style.display='none'
-  tb.innerHTML=data.map(d=>`<tr class="${sel.has(d.id)?'row-sel':''}">
+  tb.innerHTML=data.map(d=>{const ef=estadoEfectivo(d);return `<tr class="${sel.has(d.id)?'row-sel':''}">
     <td><input type="checkbox" class="cb" onchange="toggleSel('${d.id}',this)" ${sel.has(d.id)?'checked':''}></td>
-    <td><span class="tp ${d.tipo==='CTG'?'bg-purp':'bg-blue'}">${d.tipo}</span></td>
+    <td>${tipoTag(d)}</td>
     <td style="font-family:monospace;font-size:12px;white-space:nowrap">${d.numero}</td>
     <td><span style="font-weight:500">${d.especie}</span> <span style="color:var(--txt2);font-size:12px">${d.cosecha}</span></td>
     <td style="font-size:12px;color:var(--txt2)">${d.cuit_remitente||'—'}</td>
     <td style="font-weight:500;white-space:nowrap">${fmtKg(d.peso_neto)}</td>
-    <td><span class="badge ${BEST[d.estado]||'bg-gray'}">${d.estado}</span></td>
+    <td><span class="badge ${BEST[ef]||'bg-gray'}">${ef}</span></td>
     <td style="font-size:12px;color:var(--txt2);white-space:nowrap">${fmtFecha(d.vigencia_hasta)}</td>
-    <td style="white-space:nowrap;display:flex;gap:4px">
-      ${['Activo','Activa','Pendiente'].includes(d.estado)?`<button class="confirm-btn" onclick="abrirModalConf('${d.id}')"><i class="ti ti-check"></i> Confirmar</button>`:''}
-    </td>
-  </tr>`).join('')
+    <td style="white-space:nowrap;display:flex;gap:4px">${accionesDoc(d)}</td>
+  </tr>`}).join('')
   ftr.textContent=`${data.length} documento${data.length!==1?'s':''} encontrado${data.length!==1?'s':''}`
   actualizarAbar()
 }
@@ -643,7 +832,7 @@ function filtrar(){
   const hasta=document.getElementById('f-hasta').value
   docsV=docs.filter(d=>{
     if(tipo&&d.tipo!==tipo)return false
-    if(est&&d.estado!==est)return false
+    if(est&&estadoEfectivo(d)!==est)return false
     if(esp&&!d.especie.toLowerCase().includes(esp))return false
     if(cuit&&!d.cuit_remitente?.includes(cuit)&&!d.cuit_destinatario?.includes(cuit))return false
     if(desde&&d.fecha_emision<desde)return false
@@ -703,6 +892,36 @@ function confirmarArribo(){
   toast('Arribo confirmado: '+d.tipo+' '+d.numero)
 }
 
+// ── Contingencia ──────────────────────────────────────────────────
+function abrirModalContingencia(id){
+  const d=docs.find(x=>x.id===id)
+  if(!d)return
+  docContId=id
+  const modo=d.modo_transporte||'Automotor'
+  const nuevaVig=calcVigencia(modo)
+  document.getElementById('m-cont-sub').textContent=`${d.tipo} N° ${d.numero} — vigencia actual: ${fmtFecha(d.vigencia_hasta)} (${estadoEfectivo(d)})`
+  document.getElementById('motivo-cont').value=''
+  document.getElementById('cont-nueva-vig').innerHTML=`<i class="ti ti-calendar-time"></i> Al declarar la contingencia, la vigencia se extiende a <strong>${fmtFecha(nuevaVig)}</strong> (${VIGENCIA_DIAS[modo]||5} días desde hoy, modo ${modo}).`
+  document.getElementById('modal-contingencia').classList.add('open')
+}
+function confirmarContingencia(){
+  const d=docs.find(x=>x.id===docContId)
+  if(!d)return
+  const motivo=document.getElementById('motivo-cont').value.trim()
+  if(motivo.length<5){toast('Motivo mínimo 5 caracteres','err');return}
+  const modo=d.modo_transporte||'Automotor'
+  const vigenciaAnterior=d.vigencia_hasta
+  const vigenciaNueva=calcVigencia(modo)
+  d.contingencias=d.contingencias||[]
+  d.contingencias.push({fecha:new Date().toISOString().slice(0,10),motivo,vigencia_anterior:vigenciaAnterior,vigencia_nueva:vigenciaNueva})
+  d.vigencia_hasta=vigenciaNueva
+  if(!['Activo','Activa'].includes(d.estado))d.estado=d.tipo==='CTG'?'Activo':'Activa'
+  saveDocs();cerrarModal('modal-contingencia')
+  if(document.getElementById('panel-historial').classList.contains('active')){docsV=[...docs];renderHist(docsV)}
+  renderDash();metricas()
+  toast('Contingencia declarada — nueva vigencia: '+fmtFecha(vigenciaNueva))
+}
+
 // ── Anulación masiva ─────────────────────────────────────────────
 function abrirModalAnular(){
   if(!sel.size)return
@@ -723,8 +942,8 @@ function confirmarAnulacion(){
 
 // ── Exportaciones ────────────────────────────────────────────────
 function exportCSV(){
-  const headers=['Tipo','Número','Especie','Cosecha','Estado','CUIT Remitente','CUIT Destinatario','Peso Neto (kg)','Fecha Emisión','Vigencia','CTG asociado','Confirmación']
-  const filas=docs.map(d=>[d.tipo,d.numero,d.especie,d.cosecha,d.estado,d.cuit_remitente||'',d.cuit_destinatario||'',d.peso_neto||'',d.fecha_emision||'',d.vigencia_hasta||'',d.numero_ctg||'',d.fecha_confirmacion||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))
+  const headers=['Tipo','Régimen','Número','Especie','Cosecha','Estado','CUIT Remitente','CUIT Destinatario','Peso Neto (kg)','Modo transporte','Configuración vehicular','Fecha Emisión','Vigencia','CTG asociado','Confirmación','Contingencias declaradas']
+  const filas=docs.map(d=>[d.tipo,d.regimen||(d.tipo==='CTG'?'—':'Grano'),d.numero,d.especie,d.cosecha,estadoEfectivo(d),d.cuit_remitente||'',d.cuit_destinatario||'',d.peso_neto||'',d.modo_transporte||'',d.configuracion_vehicular||'',d.fecha_emision||'',d.vigencia_hasta||'',d.numero_ctg||'',d.fecha_confirmacion||'',(d.contingencias?.length||0)].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))
   const csv=[headers.join(','),...filas].join('\n')
   const a=document.createElement('a')
   a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv)
@@ -756,6 +975,9 @@ function saveConfig(){
     url:document.getElementById('cfg-url').value,
     env:document.getElementById('cfg-env').value,
     email:document.getElementById('cfg-email').value,
+    sisa_estado:document.getElementById('cfg-sisa-estado').value,
+    sisa_planta:document.getElementById('cfg-sisa-planta').value,
+    sisa_planta_activa:document.getElementById('cfg-sisa-planta-activa').checked,
   }))
 }
 function loadConfig(){
@@ -768,6 +990,9 @@ function loadConfig(){
     if(c.url)document.getElementById('cfg-url').value=c.url
     if(c.env)document.getElementById('cfg-env').value=c.env
     if(c.email)document.getElementById('cfg-email').value=c.email
+    if(c.sisa_estado)document.getElementById('cfg-sisa-estado').value=c.sisa_estado
+    if(c.sisa_planta)document.getElementById('cfg-sisa-planta').value=c.sisa_planta
+    document.getElementById('cfg-sisa-planta-activa').checked=!!c.sisa_planta_activa
     document.getElementById('cfg-ndocs').value=docs.length+' documentos'
   }catch(e){}
 }
@@ -782,30 +1007,32 @@ function toast(msg,tipo){
 
 // ── Métricas globales ────────────────────────────────────────────
 function metricas(){
-  document.getElementById('m-ctg').textContent=docs.filter(d=>d.tipo==='CTG'&&['Activo','Pendiente'].includes(d.estado)).length
+  document.getElementById('m-ctg').textContent=docs.filter(d=>d.tipo==='CTG'&&['Activo','Pendiente'].includes(estadoEfectivo(d))).length
   document.getElementById('m-cpe').textContent=docs.filter(d=>d.tipo==='CPE').length
   document.getElementById('m-ton').textContent=Math.round(docs.reduce((s,d)=>s+(d.peso_neto||0),0)/1000)
-  document.getElementById('m-pend').textContent=docs.filter(d=>['Pendiente','Activo','Activa'].includes(d.estado)).length
+  document.getElementById('m-pend').textContent=docs.filter(d=>['Pendiente','Activo','Activa'].includes(estadoEfectivo(d))).length
 }
 
 // ── Datos demo ───────────────────────────────────────────────────
 if(!docs.length){
   const hoy=new Date().toISOString().slice(0,10)
-  const d2=()=>{const d=new Date();d.setDate(d.getDate()+2);return d.toISOString().slice(0,10)}
-  const d3=()=>{const d=new Date();d.setDate(d.getDate()+3);return d.toISOString().slice(0,10)}
+  const dPlus=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
   docs=[
-    {id:'1',tipo:'CPE',numero:'74001234567',especie:'Soja',cosecha:'2024/2025',tipo_grano:'Nuevo',estado:'Activa',razon_social_remitente:'AGROPECUARIA SAN CARLOS S.A.',cuit_remitente:'30-71234567-0',razon_social_destinatario:'ACEITERA DEL LITORAL S.A.',cuit_destinatario:'30-65432100-9',localidad_productor:'Río Cuarto, Córdoba',localidad_destino:'San Lorenzo, Santa Fe',dominio_vehiculo:'AB123CD',dominio_acoplado:'EF456GH',peso_bruto_declarado:31500,peso_tara:13200,peso_neto:18300,humedad:13.5,fecha_emision:hoy,vigencia_hasta:d2()},
-    {id:'2',tipo:'CTG',numero:'CTG42987654',especie:'Maíz',cosecha:'2024/2025',grado:'Grado 2',estado:'Activo',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-88888888-0',patente_vehiculo:'CD456EF',peso_neto:24500,fecha_emision:hoy,vigencia_hasta:d3()},
-    {id:'3',tipo:'CPE',numero:'74009876543',especie:'Trigo',cosecha:'2024/2025',tipo_grano:'Nuevo',estado:'Confirmada',razon_social_remitente:'AGROPECUARIA SAN CARLOS S.A.',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-55555555-0',dominio_vehiculo:'GH789IJ',peso_neto:21800,fecha_emision:'2025-03-01',vigencia_hasta:'2025-03-03',fecha_confirmacion:'2025-03-03'},
-    {id:'4',tipo:'CTG',numero:'CTG38741200',especie:'Soja',cosecha:'2024/2025',grado:'Grado 1',estado:'Confirmado',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-44444444-0',peso_neto:19200,fecha_emision:'2025-02-20',vigencia_hasta:'2025-02-23',fecha_confirmacion:'2025-02-23'},
-    {id:'5',tipo:'CPE',numero:'74001111222',especie:'Girasol',cosecha:'2024/2025',tipo_grano:'Nuevo',estado:'Anulada',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-33333333-0',dominio_vehiculo:'KL012MN',peso_neto:15600,fecha_emision:'2025-02-10',vigencia_hasta:'2025-02-12'},
-    {id:'6',tipo:'CPE',numero:'74005556667',especie:'Maíz',cosecha:'2024/2025',estado:'Activa',razon_social_remitente:'AGROPECUARIA SAN CARLOS S.A.',cuit_remitente:'30-71234567-0',razon_social_destinatario:'MOLINOS RÍO S.A.',cuit_destinatario:'30-77777777-0',peso_neto:28100,fecha_emision:'2025-03-10',vigencia_hasta:d2()},
-    {id:'7',tipo:'CTG',numero:'CTG52000001',especie:'Cebada cervecera',cosecha:'2024/2025',estado:'Activo',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-99999999-0',peso_neto:12400,fecha_emision:'2025-01-15',vigencia_hasta:'2025-01-18'},
-    {id:'8',tipo:'CPE',numero:'74008880001',especie:'Soja',cosecha:'2024/2025',estado:'Confirmada',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-11111111-0',peso_neto:22000,fecha_emision:'2025-01-20',vigencia_hasta:'2025-01-22',fecha_confirmacion:'2025-01-22'},
+    {id:'1',tipo:'CPE',regimen:'Grano',modo_transporte:'Automotor',configuracion_vehicular:'Semirremolque articulado (5-6 ejes)',numero:'74001234567',especie:'Soja',cosecha:'2024/2025',tipo_grano:'Nuevo',estado:'Activa',razon_social_remitente:'AGROPECUARIA SAN CARLOS S.A.',cuit_remitente:'30-71234567-0',razon_social_destinatario:'ACEITERA DEL LITORAL S.A.',cuit_destinatario:'30-65432100-9',localidad_productor:'Río Cuarto, Córdoba',localidad_destino:'San Lorenzo, Santa Fe',dominio_vehiculo:'AB123CD',dominio_acoplado:'EF456GH',peso_bruto_declarado:31500,peso_tara:13200,peso_neto:18300,humedad:13.5,fecha_emision:hoy,vigencia_hasta:dPlus(1)},
+    {id:'2',tipo:'CTG',modo_transporte:'Automotor',configuracion_vehicular:'Camión con acoplado (4-5 ejes)',numero:'CTG42987654',especie:'Maíz',cosecha:'2024/2025',grado:'Grado 2',estado:'Activo',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-88888888-0',patente_vehiculo:'CD456EF',peso_bruto_declarado:38500,peso_tara:14000,peso_neto:24500,fecha_emision:hoy,vigencia_hasta:dPlus(5)},
+    {id:'3',tipo:'CPE',regimen:'Grano',modo_transporte:'Automotor',configuracion_vehicular:'Camión simple (2 ejes)',numero:'74009876543',especie:'Trigo',cosecha:'2024/2025',tipo_grano:'Nuevo',estado:'Confirmada',razon_social_remitente:'AGROPECUARIA SAN CARLOS S.A.',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-55555555-0',dominio_vehiculo:'GH789IJ',peso_neto:21800,fecha_emision:'2026-08-01',vigencia_hasta:'2026-08-06',fecha_confirmacion:'2026-08-03'},
+    {id:'4',tipo:'CTG',modo_transporte:'Automotor',configuracion_vehicular:'Semirremolque articulado (5-6 ejes)',numero:'CTG38741200',especie:'Soja',cosecha:'2024/2025',grado:'Grado 1',estado:'Confirmado',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-44444444-0',peso_neto:19200,fecha_emision:'2026-07-20',vigencia_hasta:'2026-07-25',fecha_confirmacion:'2026-07-23'},
+    {id:'5',tipo:'CPE',regimen:'Grano',modo_transporte:'Automotor',configuracion_vehicular:'Camión con acoplado (4-5 ejes)',numero:'74001111222',especie:'Girasol',cosecha:'2024/2025',tipo_grano:'Nuevo',estado:'Anulada',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-33333333-0',dominio_vehiculo:'KL012MN',peso_neto:15600,fecha_emision:'2026-07-10',vigencia_hasta:'2026-07-15'},
+    {id:'6',tipo:'CPE',regimen:'CPEDG',modo_transporte:'Ferroviario',configuracion_vehicular:'Bitrén 9 ejes',numero:'74005556667',especie:'Maíz',cosecha:'2024/2025',estado:'Activa',razon_social_remitente:'AGROPECUARIA SAN CARLOS S.A.',cuit_remitente:'30-71234567-0',razon_social_destinatario:'MOLINOS RÍO S.A.',cuit_destinatario:'30-77777777-0',peso_neto:28100,fecha_emision:hoy,vigencia_hasta:dPlus(30)},
+    {id:'7',tipo:'CTG',modo_transporte:'Automotor',configuracion_vehicular:'Camión simple (2 ejes)',numero:'CTG52000001',especie:'Cebada cervecera',cosecha:'2024/2025',estado:'Activo',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-99999999-0',peso_neto:12400,fecha_emision:'2026-06-15',vigencia_hasta:'2026-06-20'},
+    {id:'8',tipo:'CPE',regimen:'Grano',modo_transporte:'Automotor',configuracion_vehicular:'Semirremolque articulado (5-6 ejes)',numero:'74008880001',especie:'Soja',cosecha:'2024/2025',estado:'Confirmada',cuit_remitente:'30-71234567-0',cuit_destinatario:'30-11111111-0',peso_neto:22000,fecha_emision:'2026-06-01',vigencia_hasta:'2026-06-06',fecha_confirmacion:'2026-06-03'},
   ]
   saveDocs()
 }
 
+poblarConfigVehicular()
+toggleCpedg()
+actualizarVigenciaInfo()
 metricas()
 renderDash()
 </script>
