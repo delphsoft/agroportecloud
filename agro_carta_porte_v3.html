@@ -404,14 +404,14 @@ tr:hover td{background:var(--bg2)}
           <div class="sdiv">Backend ARCA (producción)</div>
           <div class="fgrid">
             <div class="fr2">
-              <div class="fg"><label class="fl">URL API backend</label><input type="text" id="cfg-url" placeholder="https://tu-app.vercel.app/api/agro" oninput="saveConfig()"></div>
+              <div class="fg"><label class="fl">URL backend ARCA (dejar vacío = modo offline/demo)</label><input type="text" id="cfg-url" placeholder="https://agroportecloud.vercel.app" oninput="saveConfig()"></div>
               <div class="fg"><label class="fl">Ambiente</label><select id="cfg-env" onchange="saveConfig()"><option value="dev">Homologación</option><option value="prod">Producción</option></select></div>
             </div>
             <div class="fr2">
               <div class="fg"><label class="fl">Email notificaciones (Resend)</label><input type="text" id="cfg-email" placeholder="agro@tuempresa.com.ar" oninput="saveConfig()"></div>
               <div class="fg"><label class="fl">Documentos guardados</label><input type="text" id="cfg-ndocs" readonly></div>
             </div>
-            <div class="ibox"><i class="ti ti-info-circle"></i> Esta interfaz funciona offline guardando en el navegador. Cuando conectes el backend Next.js de la Fase 2, los datos se sincronizarán con Supabase y ARCA automáticamente.</div>
+            <div class="ibox" id="modo-backend-info"><i class="ti ti-info-circle"></i> Sin URL de backend configurada: modo offline/demo, todo se guarda solo en este navegador. Con la URL cargada, "Emitir CPE" llama de verdad a <code>/api/cpe-solicitar</code> contra ARCA (vía AfipSDK) — revisá el código de esos endpoints antes de usarlos en producción, tienen partes marcadas como no verificadas.</div>
           </div>
           <div class="fftr">
             <button class="btn btn-danger btn-sm" onclick="if(confirm('¿Borrar todos los datos?')){docs=[];saveDocs();metricas();toast('Datos borrados')}"><i class="ti ti-trash"></i> Borrar datos</button>
@@ -548,6 +548,23 @@ function estadoEfectivo(d){
 
 function saveDocs(){localStorage.setItem('agro-docs',JSON.stringify(docs))}
 
+// ── Backend ARCA (opcional) ──────────────────────────────────────
+// Si hay URL cargada en Configuración, esto llama de verdad a los endpoints
+// de api/*.js (ver ese código para las salvedades de qué está verificado y
+// qué no). Sin URL, sigue funcionando 100% offline como hasta ahora.
+function backendUrl(){
+  const c=getSisaConfig()
+  return (c.url||'').replace(/\/$/,'')
+}
+async function llamarBackend(path,payload){
+  const base=backendUrl()
+  const r=await fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  let data={}
+  try{data=await r.json()}catch(e){}
+  if(!r.ok)throw new Error(data?.message||data?.error||('HTTP '+r.status))
+  return data
+}
+
 // ── Formato ──────────────────────────────────────────────────────
 const fmtKg = n => n||n===0 ? Number(n).toLocaleString('es-AR')+' kg' : '—'
 const fmtFecha = s => {if(!s)return'—';try{return new Date(s.slice(0,10)+'T00:00:00').toLocaleDateString('es-AR')}catch{return s}}
@@ -598,6 +615,10 @@ function limpiar(tipo){
 
 function guardarCTG(){
   if(!sisaHabilitado()){toast('No podés emitir: falta habilitación SISA (planta activa) en Configuración','err');return}
+  if(backendUrl()){
+    toast('Con backend conectado, el CTG se genera junto con la CPE (RG 5017/2021) — usá "Nueva CPE"','err')
+    return
+  }
   const bruto=document.getElementById('ctg-bruto').value
   const rem=document.getElementById('ctg-crem').value
   const dest=document.getElementById('ctg-cdest').value
@@ -627,7 +648,7 @@ function guardarCTG(){
   saveDocs();metricas();toast('CTG registrada: '+num);limpiar('ctg')
 }
 
-function guardarCPE(){
+async function guardarCPE(){
   if(!sisaHabilitado()){toast('No podés emitir: falta habilitación SISA (planta activa) en Configuración','err');return}
   const rsRem=document.getElementById('cpe-rsrem').value
   const cRem=document.getElementById('cpe-crem').value
@@ -644,8 +665,42 @@ function guardarCPE(){
   if(!chk.ok){toast(chk.motivo,'err');return}
   const modo=document.getElementById('cpe-modo').value
   const hoy=new Date().toISOString().slice(0,10)
-  const vig=calcVigencia(modo)
-  const num='74'+String(Math.floor(Math.random()*9000000000+1000000000))
+  let vig=calcVigencia(modo)
+  let num='74'+String(Math.floor(Math.random()*9000000000+1000000000))
+  let numeroCTGReal=document.getElementById('cpe-ctg').value
+
+  const payloadBase={
+    modo_transporte:modo,regimen,especie:document.getElementById('cpe-esp').value,
+    cosecha:document.getElementById('cpe-cos').value,tipo_grano:document.getElementById('cpe-tgr').value,
+    cuit_remitente:cRem,razon_social_remitente:rsRem,
+    cuit_destinatario:cDest,razon_social_destinatario:document.getElementById('cpe-rsdest').value,
+    localidad_productor:document.getElementById('cpe-lorig').value,
+    localidad_destino:document.getElementById('cpe-ldest').value,
+    establecimiento:document.getElementById('cpe-estab').value,
+    planta_destino:document.getElementById('cpe-planta').value,
+    cuit_transportista:document.getElementById('cpe-ctrans').value,
+    dominio_vehiculo:document.getElementById('cpe-dom').value,
+    dominio_acoplado:document.getElementById('cpe-acop').value,
+    configuracion_vehicular:configVeh,
+    peso_bruto_declarado:b,peso_tara:t,peso_neto:b-t,
+    humedad:document.getElementById('cpe-hum').value,
+    porcentaje_zaranda:document.getElementById('cpe-zar').value,
+    fecha_hora_partida:document.getElementById('cpe-fpart').value,
+    km_a_recorrer:document.getElementById('cpe-km').value,
+  }
+
+  if(backendUrl()){
+    try{
+      const resp=await llamarBackend('/api/cpe-solicitar',payloadBase)
+      num=resp.numeroCPE||num
+      if(resp.numeroCTG)numeroCTGReal=resp.numeroCTG
+      if(resp.vigenciaHasta)vig=resp.vigenciaHasta
+    }catch(e){
+      toast('ARCA rechazó la emisión: '+e.message,'err')
+      return
+    }
+  }
+
   docs.unshift({id:Date.now().toString(),tipo:'CPE',numero:num,regimen:regimen,
     modo_transporte:modo,configuracion_vehicular:configVeh,
     especie:document.getElementById('cpe-esp').value,cosecha:document.getElementById('cpe-cos').value,
@@ -661,7 +716,7 @@ function guardarCPE(){
     dominio_acoplado:document.getElementById('cpe-acop').value,
     fecha_hora_partida:document.getElementById('cpe-fpart').value,
     km_a_recorrer:document.getElementById('cpe-km').value,
-    numero_ctg:document.getElementById('cpe-ctg').value,
+    numero_ctg:numeroCTGReal,
     cuit_rem_comercial_primaria:document.getElementById('cpe-rem-prim').value,
     cuit_corredor_venta_primaria:document.getElementById('cpe-corr-prim').value,
     cuit_rem_comercial_secundaria1:document.getElementById('cpe-rem-sec1').value,
@@ -904,14 +959,25 @@ function abrirModalContingencia(id){
   document.getElementById('cont-nueva-vig').innerHTML=`<i class="ti ti-calendar-time"></i> Al declarar la contingencia, la vigencia se extiende a <strong>${fmtFecha(nuevaVig)}</strong> (${VIGENCIA_DIAS[modo]||5} días desde hoy, modo ${modo}).`
   document.getElementById('modal-contingencia').classList.add('open')
 }
-function confirmarContingencia(){
+async function confirmarContingencia(){
   const d=docs.find(x=>x.id===docContId)
   if(!d)return
   const motivo=document.getElementById('motivo-cont').value.trim()
   if(motivo.length<5){toast('Motivo mínimo 5 caracteres','err');return}
   const modo=d.modo_transporte||'Automotor'
   const vigenciaAnterior=d.vigencia_hasta
-  const vigenciaNueva=calcVigencia(modo)
+  let vigenciaNueva=calcVigencia(modo)
+
+  if(backendUrl() && d.tipo==='CPE'){
+    try{
+      const resp=await llamarBackend('/api/cpe-contingencia',{numero_cpe:d.numero,motivo})
+      if(resp.vigenciaHasta)vigenciaNueva=resp.vigenciaHasta
+    }catch(e){
+      toast('ARCA rechazó la contingencia: '+e.message,'err')
+      return
+    }
+  }
+
   d.contingencias=d.contingencias||[]
   d.contingencias.push({fecha:new Date().toISOString().slice(0,10),motivo,vigencia_anterior:vigenciaAnterior,vigencia_nueva:vigenciaNueva})
   d.vigencia_hasta=vigenciaNueva
