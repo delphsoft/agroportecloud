@@ -1,6 +1,6 @@
 "use client";
 import { useMemo } from "react";
-import { BookUser, FileSpreadsheet, Inbox, LayoutDashboard, List, Settings } from "lucide-react";
+import { BookUser, FileSpreadsheet, Inbox, LayoutDashboard, List, Settings, Truck, Users, Warehouse } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useCpe, type View } from "@/lib/store";
 import { DashboardView, HistorialView } from "@/components/app/views";
@@ -11,13 +11,16 @@ import { PadronesView } from "@/components/app/padrones";
 import { cn } from "@/lib/utils";
 import { fmtCuit } from "@/lib/types";
 
-const NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "cpe", label: "Nueva CPE", icon: FileSpreadsheet },
-  { id: "viajes", label: "Viajes", icon: List },
-  { id: "inbox", label: "Bandeja CUIT", icon: Inbox },
-  { id: "padrones", label: "Padrones", icon: BookUser },
-  { id: "config", label: "Cliente / CUIT", icon: Settings },
+const NAV: { id: View; label: string; icon: typeof LayoutDashboard; sec?: string }[] = [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, sec: "Principal" },
+  { id: "cpe", label: "Nueva CPE", icon: FileSpreadsheet, sec: "Documentos" },
+  { id: "viajes", label: "Viajes", icon: List, sec: "Documentos" },
+  { id: "destinatario", label: "Destinatario", icon: Warehouse, sec: "Portales" },
+  { id: "transportista", label: "Transportista", icon: Truck, sec: "Portales" },
+  { id: "corredor", label: "Corredor", icon: Users, sec: "Portales" },
+  { id: "inbox", label: "Bandeja CUIT", icon: Inbox, sec: "Portales" },
+  { id: "padrones", label: "Padrones", icon: BookUser, sec: "Sistema" },
+  { id: "config", label: "Cliente / CUIT", icon: Settings, sec: "Sistema" },
 ];
 
 export function AppShell() {
@@ -41,25 +44,32 @@ export function AppShell() {
           <p className="text-xs text-muted-fg">CPE automotor · WSCPE</p>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {NAV.map((n) => {
+          {NAV.map((n, i) => {
             const Icon = n.icon;
             const on = view === n.id;
+            const showSec = n.sec && n.sec !== NAV[i - 1]?.sec;
             return (
-              <button
-                key={n.id}
-                type="button"
-                onClick={() => setView(n.id)}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
-                  on ? "bg-primary text-white" : "text-muted-fg hover:bg-muted hover:text-fg",
-                )}
-              >
-                <Icon className="size-4" />
-                {n.label}
-                {n.id === "viajes" && pendientes > 0 && !on ? (
-                  <span className="ml-auto rounded bg-warn-soft px-1.5 text-[10px] font-bold text-warn">{pendientes}</span>
+              <div key={n.id}>
+                {showSec ? (
+                  <p className="mb-1 mt-3 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-fg first:mt-0">
+                    {n.sec}
+                  </p>
                 ) : null}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setView(n.id)}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
+                    on ? "bg-primary text-white" : "text-muted-fg hover:bg-muted hover:text-fg",
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {n.label}
+                  {n.id === "viajes" && pendientes > 0 && !on ? (
+                    <span className="ml-auto rounded bg-warn-soft px-1.5 text-[10px] font-bold text-warn">{pendientes}</span>
+                  ) : null}
+                </button>
+              </div>
             );
           })}
         </nav>
@@ -89,12 +99,15 @@ export function AppShell() {
           {view === "dashboard" && <DashboardView />}
           {view === "cpe" && <EmitCpe />}
           {view === "viajes" && <HistorialView />}
+          {view === "destinatario" && <InboxView role="destinatario" />}
+          {view === "transportista" && <InboxView role="transportista" />}
+          {view === "corredor" && <InboxView role="corredor" />}
           {view === "inbox" && <InboxView />}
           {view === "padrones" && <PadronesView />}
           {view === "config" && <ConfigView />}
         </main>
         <nav className="grid grid-cols-4 border-t border-border bg-surface p-2 md:hidden">
-          {NAV.filter((n) => ["dashboard", "cpe", "viajes", "inbox"].includes(n.id)).map((n) => (
+          {NAV.filter((n) => ["dashboard", "cpe", "viajes", "destinatario"].includes(n.id)).map((n) => (
             <button key={n.id} type="button" onClick={() => setView(n.id)} className="py-2 text-[11px] font-semibold">
               {n.label}
             </button>

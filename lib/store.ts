@@ -3,7 +3,16 @@ import { SEED_ACTORES, SEED_CAMIONES, seedCpes } from "@/lib/seed";
 import type { Actor, Camion, CpeDoc, CpeStatus } from "@/lib/types";
 import { cleanCuit, pesoNeto } from "@/lib/types";
 
-export type View = "dashboard" | "cpe" | "viajes" | "inbox" | "padrones" | "config";
+export type View =
+  | "dashboard"
+  | "cpe"
+  | "viajes"
+  | "destinatario"
+  | "transportista"
+  | "corredor"
+  | "inbox"
+  | "padrones"
+  | "config";
 
 type State = {
   demo: boolean;

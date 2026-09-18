@@ -7,7 +7,7 @@ import { granoLabel, locLabel } from "@/lib/catalog";
 import { pesoNeto, useCpe } from "@/lib/store";
 import { STATUS_LABEL, cleanCuit } from "@/lib/types";
 
-export function InboxView() {
+export function InboxView({ role }: { role?: "destinatario" | "transportista" | "corredor" }) {
   const docs = useCpe((s) => s.docs);
   const inboxCuit = useCpe((s) => s.inboxCuit);
   const setInboxCuit = useCpe((s) => s.setInboxCuit);
@@ -16,19 +16,26 @@ export function InboxView() {
   const confirmar = useCpe((s) => s.confirmar);
   const [bruto, setBruto] = useState("");
   const [tara, setTara] = useState("");
-  const cuit = cleanCuit(inboxCuit);
-  const actor = actores.find((a) => cleanCuit(a.cuit) === cuit);
+  const kind =
+    role === "destinatario" ? "acopio" : role === "transportista" ? "transportista" : role === "corredor" ? "corredor" : null;
+  const preset = kind ? actores.find((a) => a.kind === kind) || actores.find((a) => role === "transportista" && a.kind === "chofer") : null;
+  const cuit = cleanCuit(inboxCuit) || (preset ? cleanCuit(preset.cuit) : "");
+  const actor = actores.find((a) => cleanCuit(a.cuit) === cuit) || preset;
   const rows = !cuit
-    ? []
-    : docs.filter(
-        (d) =>
+    ? docs
+    : docs.filter((d) => {
+        if (role === "destinatario") return cleanCuit(d.cuitDestino) === cuit || cleanCuit(d.cuitDestinatario) === cuit;
+        if (role === "transportista") return cleanCuit(d.cuitTransportista) === cuit || cleanCuit(d.cuitChofer) === cuit;
+        if (role === "corredor") return cleanCuit(d.cuitCorredor1) === cuit || cleanCuit(d.cuitCorredor2) === cuit;
+        return (
           cleanCuit(d.cuitDestino) === cuit ||
           cleanCuit(d.cuitDestinatario) === cuit ||
           cleanCuit(d.cuitTransportista) === cuit ||
           cleanCuit(d.cuitChofer) === cuit ||
           cleanCuit(d.cuitCorredor1) === cuit ||
-          cleanCuit(d.cuitSolicitante) === cuit,
-      );
+          cleanCuit(d.cuitSolicitante) === cuit
+        );
+      });
   const rol =
     actor?.kind === "acopio"
       ? "planta destino"
