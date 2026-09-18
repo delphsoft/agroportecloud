@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { CheckCircle2, FileSpreadsheet, Scale, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -24,34 +25,62 @@ const TONE: Record<CpeStatus, "ok" | "warn" | "brand" | "neutral"> = {
 export function DashboardView() {
   const docs = useCpe((s) => s.docs);
   const setView = useCpe((s) => s.setView);
+  const setViajeStatus = useCpe((s) => s.setViajeStatus);
   const sucursal = useCpe((s) => s.sucursal);
   const ultimoOrden = useCpe((s) => s.ultimoOrden);
+  const [open, setOpen] = useState<CpeDoc | null>(null);
   const curso = docs.filter((d) => ["autorizada", "en_viaje", "arribada", "desviada"].includes(d.status));
   const tn = docs.reduce((s, d) => s + pesoNeto(d.pesoBruto, d.pesoTara), 0) / 1000;
   const conf = docs.filter((d) => d.status === "confirmada").length;
+  function go(status: string) {
+    setViajeStatus(status);
+    setView("viajes");
+  }
+  const kpis: { label: string; value: string; sub: string; icon: typeof Truck; tint: string; to: string }[] = [
+    { label: "En circuito", value: String(curso.length), sub: "viaje / arribo / desvío", icon: Truck, tint: "bg-primary-soft text-primary", to: "circuito" },
+    { label: "CPE", value: String(docs.length), sub: `sucursal ${sucursal} · orden ${ultimoOrden}`, icon: FileSpreadsheet, tint: "bg-primary-soft text-primary", to: "all" },
+    { label: "Toneladas", value: tn.toFixed(1), sub: "neto origen", icon: Scale, tint: "bg-warn-soft text-warn", to: "all" },
+    { label: "Confirmadas", value: String(conf), sub: "cierre definitivo", icon: CheckCircle2, tint: "bg-ok-soft text-ok", to: "confirmada" },
+  ];
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="En circuito" value={String(curso.length)} sub="viaje / arribo / desvío" />
-        <Kpi label="CPE" value={String(docs.length)} sub={`sucursal ${sucursal} · orden ${ultimoOrden}`} />
-        <Kpi label="Toneladas" value={tn.toFixed(1)} sub="neto origen" />
-        <Kpi label="Confirmadas" value={String(conf)} sub="cierre definitivo" />
+        {kpis.map((k) => (
+          <button
+            key={k.label}
+            type="button"
+            onClick={() => go(k.to)}
+            className="rounded-xl border border-border bg-surface p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted"
+          >
+            <div className={`mb-3 flex size-10 items-center justify-center rounded-md ${k.tint}`}>
+              <k.icon className="size-5" strokeWidth={1.75} />
+            </div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-fg">{k.label}</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-fg">{k.value}</p>
+            <p className="mt-0.5 text-xs text-muted-fg">{k.sub}</p>
+          </button>
+        ))}
       </div>
       <Button onClick={() => setView("cpe")}>Nueva CPE automotor</Button>
       <Card title="Últimas cartas de porte">
-        <Tabla docs={docs.slice(0, 8)} />
+        <Tabla docs={docs.slice(0, 8)} onOpen={setOpen} />
       </Card>
+      <ViajeDialog doc={open} onClose={() => setOpen(null)} />
     </div>
   );
 }
 
 export function HistorialView() {
   const docs = useCpe((s) => s.docs);
+  const st = useCpe((s) => s.viajeStatus);
+  const setViajeStatus = useCpe((s) => s.setViajeStatus);
   const [q, setQ] = useState("");
-  const [st, setSt] = useState("all");
   const [open, setOpen] = useState<CpeDoc | null>(null);
+  const CIRCUITO = ["autorizada", "en_viaje", "arribada", "desviada"];
   const rows = docs.filter((d) => {
-    if (st !== "all" && d.status !== st) return false;
+    if (st === "circuito") {
+      if (!CIRCUITO.includes(d.status)) return false;
+    } else if (st !== "all" && d.status !== st) return false;
     const hay = `${d.nroCtg} ${d.nroCpe} ${d.dominio} ${d.cuitSolicitante} ${granoLabel(d.codGrano)}`.toLowerCase();
     return hay.includes(q.toLowerCase());
   });
@@ -59,8 +88,9 @@ export function HistorialView() {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         <Input className="max-w-xs" placeholder="CTG, CPE, dominio, CUIT…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <Select value={st} onChange={(e) => setSt(e.target.value)}>
+        <Select value={st} onChange={(e) => setViajeStatus(e.target.value)}>
           <option value="all">Todos los estados</option>
+          <option value="circuito">En circuito</option>
           {Object.entries(STATUS_LABEL).map(([k, v]) => (
             <option key={k} value={k}>
               {v}
@@ -204,12 +234,26 @@ function Tabla({ docs, onOpen }: { docs: CpeDoc[]; onOpen?: (d: CpeDoc) => void 
         </thead>
         <tbody>
           {docs.map((d) => (
-            <tr key={d.id} className="border-t border-border">
+            <tr
+              key={d.id}
+              className="cursor-pointer border-t border-border hover:bg-muted"
+              onClick={() => onOpen?.(d)}
+            >
               <td className="px-3 py-2 font-mono text-xs">
-                <button type="button" className="text-primary" onClick={() => onOpen?.(d)}>
+                <button
+                  type="button"
+                  className="text-left text-primary underline-offset-2 hover:underline"
+                  onClick={() => onOpen?.(d)}
+                >
                   {d.nroCpe}
                 </button>
-                <div className="text-[10px] text-muted-fg">{d.nroCtg}</div>
+                <button
+                  type="button"
+                  className="block text-[10px] text-muted-fg underline-offset-2 hover:underline"
+                  onClick={() => onOpen?.(d)}
+                >
+                  {d.nroCtg}
+                </button>
               </td>
               <td className="px-3 py-2">
                 {granoLabel(d.codGrano)}

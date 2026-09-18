@@ -17,7 +17,9 @@ type State = {
   camiones: Camion[];
   docs: CpeDoc[];
   lastError: string;
+  viajeStatus: string;
   setView: (v: View) => void;
+  setViajeStatus: (s: string) => void;
   setDemo: (on: boolean) => void;
   setInboxCuit: (c: string) => void;
   setClient: (cuit: string, razon: string, sucursal: number) => void;
@@ -70,7 +72,9 @@ export const useCpe = create<State>((set, get) => ({
   camiones: saved.camiones?.length ? saved.camiones : SEED_CAMIONES,
   docs: saved.docs?.length ? saved.docs : seedDocs,
   lastError: "",
+  viajeStatus: "all",
   setView: (view) => set({ view }),
+  setViajeStatus: (viajeStatus) => set({ viajeStatus }),
   setInboxCuit: (inboxCuit) => {
     set({ inboxCuit: cleanCuit(inboxCuit) });
     snap(get());
