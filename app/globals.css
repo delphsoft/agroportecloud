@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  background: #f4f5f3;
+  color: #1a1a18;
+}
+button:not(:disabled) {
+  cursor: pointer;
+}
