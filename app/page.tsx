@@ -20,8 +20,8 @@ export default function Home() {
         <p className="text-xs font-semibold tracking-wide text-primary uppercase">PymeStudio</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Carta de Porte lista para mostrar</h1>
         <p className="mt-3 text-sm text-muted-fg">
-          CTG, CPE, arribo, desvío, chofer y planta. Hoy corre con datos demo. Cuando entre el cliente, cargás el CUIT
-          y seguís con el mismo flujo. ARCA se conecta después.
+          CPE automotor con campos WSCPE, padrones, bandeja por CUIT y constancia para la ruta. Demo hasta el primer
+          cliente: cargás el CUIT y la sucursal. ARCA se enchufa después.
         </p>
       </div>
       <Button onClick={() => router.push("/dashboard")}>Entrar al producto</Button>

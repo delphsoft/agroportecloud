@@ -1,75 +1,110 @@
 "use client";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useCpe } from "@/lib/store";
-import type { Role } from "@/lib/demo";
-import { statusLabel } from "@/components/app/views";
-import { useState } from "react";
+import { granoLabel, locLabel } from "@/lib/catalog";
+import { pesoNeto, useCpe } from "@/lib/store";
+import { STATUS_LABEL, cleanCuit } from "@/lib/types";
 
-export function RoleInbox({ role }: { role: Role }) {
-  const viajes = useCpe((s) => s.viajes);
-  const confirmArribo = useCpe((s) => s.confirmArribo);
-  const [peso, setPeso] = useState<Record<string, string>>({});
-  const rows = viajes.filter((v) => {
-    if (role === "destinatario") return v.status === "en_viaje" || v.status === "confirmada";
-    if (role === "transportista") return v.status === "en_viaje" || v.status === "activa";
-    return true;
-  });
-  const title =
-    role === "destinatario"
-      ? "Planta destino — confirmar arribo"
-      : role === "transportista"
-        ? "Viajes del chofer"
-        : "Operaciones del corredor";
+export function InboxView() {
+  const docs = useCpe((s) => s.docs);
+  const inboxCuit = useCpe((s) => s.inboxCuit);
+  const setInboxCuit = useCpe((s) => s.setInboxCuit);
+  const actores = useCpe((s) => s.actores);
+  const arribo = useCpe((s) => s.arribo);
+  const confirmar = useCpe((s) => s.confirmar);
+  const [bruto, setBruto] = useState("");
+  const [tara, setTara] = useState("");
+  const cuit = cleanCuit(inboxCuit);
+  const actor = actores.find((a) => cleanCuit(a.cuit) === cuit);
+  const rows = !cuit
+    ? []
+    : docs.filter(
+        (d) =>
+          cleanCuit(d.cuitDestino) === cuit ||
+          cleanCuit(d.cuitDestinatario) === cuit ||
+          cleanCuit(d.cuitTransportista) === cuit ||
+          cleanCuit(d.cuitChofer) === cuit ||
+          cleanCuit(d.cuitCorredor1) === cuit ||
+          cleanCuit(d.cuitSolicitante) === cuit,
+      );
+  const rol =
+    actor?.kind === "acopio"
+      ? "planta destino"
+      : actor?.kind === "transportista" || actor?.kind === "chofer"
+        ? "transporte"
+        : actor?.kind === "corredor"
+          ? "corredor"
+          : actor?.kind || "CUIT";
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-fg">{title}. Misma base que el productor; cada rol ve lo suyo.</p>
-      {rows.map((v) => (
-        <div key={v.id} className="rounded-xl border border-border bg-surface p-4">
-          <div className="flex items-start justify-between gap-3">
+    <div className="space-y-4">
+      <div>
+        <p className="text-sm font-semibold">Bandeja por CUIT</p>
+        <p className="text-xs text-muted-fg">El mismo viaje lo ve productor, planta, chofer o corredor según intervenga.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Input className="max-w-xs" placeholder="CUIT para entrar al inbox" value={inboxCuit} onChange={(e) => setInboxCuit(e.target.value)} />
+        {actores.slice(0, 8).map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            className="rounded-md border border-border px-2 py-1 text-xs"
+            onClick={() => setInboxCuit(a.cuit)}
+          >
+            {a.kind}: {a.razon.split(" ")[0]}
+          </button>
+        ))}
+      </div>
+      {cuit ? (
+        <p className="text-sm">
+          Viendo como <span className="font-semibold">{actor?.razon || cuit}</span> ({rol}) · {rows.length} CPE
+        </p>
+      ) : (
+        <p className="text-sm text-muted-fg">Ingresá un CUIT del padrón para ver su bandeja.</p>
+      )}
+      {rows.map((d) => (
+        <div key={d.id} className="rounded-xl border border-border bg-surface p-4">
+          <div className="flex justify-between gap-3">
             <div>
               <p className="font-semibold">
-                {v.especie} · {v.pesoNeto.toLocaleString("es-AR")} kg
+                {granoLabel(d.codGrano)} · {pesoNeto(d.pesoBruto, d.pesoTara).toLocaleString("es-AR")} kg
+              </p>
+              <p className="font-mono text-xs text-muted-fg">
+                {d.nroCpe} · CTG {d.nroCtg}
               </p>
               <p className="text-xs text-muted-fg">
-                CTG {v.nroCtg}
-                {v.nroCpe ? ` · CPE ${v.nroCpe}` : ""} · {v.patente}
-              </p>
-              <p className="text-xs text-muted-fg">
-                {v.origen} → {v.destino}
+                {locLabel(d.origenLoc)} → {locLabel(d.destinoLoc)} · {d.dominio}
               </p>
             </div>
-            <Badge tone={v.status === "confirmada" ? "ok" : "brand"}>{statusLabel(v.status)}</Badge>
+            <Badge tone={d.status === "confirmada" ? "ok" : "brand"}>{STATUS_LABEL[d.status]}</Badge>
           </div>
-          {role === "destinatario" && v.status === "en_viaje" ? (
+          {actor?.kind === "acopio" && d.status === "en_viaje" ? (
             <div className="mt-3 flex flex-wrap gap-2">
-              <Input
-                className="max-w-[160px]"
-                inputMode="numeric"
-                placeholder="Kg báscula"
-                value={peso[v.id] ?? String(v.pesoNeto)}
-                onChange={(e) => setPeso({ ...peso, [v.id]: e.target.value })}
-              />
-              <Button onClick={() => confirmArribo(v.id, Number(peso[v.id] || v.pesoNeto), "Confirmado en planta")}>
-                Confirmar arribo
+              <Input className="w-28" placeholder="Bruto" value={bruto} onChange={(e) => setBruto(e.target.value)} />
+              <Input className="w-28" placeholder="Tara" value={tara} onChange={(e) => setTara(e.target.value)} />
+              <Button onClick={() => arribo(d.id, Number(bruto) || d.pesoBruto, Number(tara) || d.pesoTara)}>
+                Arribo
               </Button>
             </div>
           ) : null}
-          {role === "transportista" ? (
+          {actor?.kind === "acopio" && d.status === "arribada" ? (
+            <Button className="mt-3" onClick={() => confirmar(d.id)}>
+              Confirmación definitiva
+            </Button>
+          ) : null}
+          {(actor?.kind === "chofer" || actor?.kind === "transportista") && (
             <a
               className="mt-3 inline-block text-xs font-semibold text-primary underline"
-              href={`https://wa.me/?text=${encodeURIComponent(`CTG ${v.nroCtg} destino ${v.destino} patente ${v.patente}`)}`}
+              href={`/constancia/${d.id}`}
               target="_blank"
-              rel="noreferrer"
             >
-              Compartir por WhatsApp
+              Constancia para la ruta
             </a>
-          ) : null}
+          )}
         </div>
       ))}
-      {!rows.length ? <p className="text-sm text-muted-fg">Nada pendiente para este rol.</p> : null}
     </div>
   );
 }

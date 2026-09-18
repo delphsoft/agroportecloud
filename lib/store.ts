@@ -1,48 +1,39 @@
 import { create } from "zustand";
-import {
-  CORREDORES,
-  DESTINOS,
-  PRODUCTORES,
-  TRANSPORTES,
-  seedViajes,
-  type Actor,
-  type DocStatus,
-  type Role,
-  type Viaje,
-} from "@/lib/demo";
+import { SEED_ACTORES, SEED_CAMIONES, seedCpes } from "@/lib/seed";
+import type { Actor, Camion, CpeDoc, CpeStatus } from "@/lib/types";
+import { cleanCuit, pesoNeto } from "@/lib/types";
 
-export type View =
-  | "dashboard"
-  | "ctg"
-  | "cpe"
-  | "historial"
-  | "destinatario"
-  | "transportista"
-  | "corredor"
-  | "config";
+export type View = "dashboard" | "cpe" | "viajes" | "inbox" | "padrones" | "config";
 
 type State = {
   demo: boolean;
   view: View;
-  role: Role;
+  inboxCuit: string;
   clientCuit: string;
   clientRazon: string;
-  cosecha: string;
-  viajes: Viaje[];
+  sucursal: number;
+  ultimoOrden: number;
+  actores: Actor[];
+  camiones: Camion[];
+  docs: CpeDoc[];
   lastError: string;
   setView: (v: View) => void;
-  setRole: (r: Role) => void;
   setDemo: (on: boolean) => void;
-  setClient: (cuit: string, razon: string) => void;
-  setCosecha: (c: string) => void;
-  addCtg: (v: Omit<Viaje, "id" | "kind" | "nroCtg" | "nroCpe" | "status" | "createdAt" | "pesoConfirmado">) => Viaje;
-  addCpe: (v: Omit<Viaje, "id" | "kind" | "nroCtg" | "nroCpe" | "status" | "createdAt" | "pesoConfirmado"> & { nroCtg?: string }) => Viaje;
-  confirmArribo: (id: string, peso: number, obs: string) => void;
-  desviar: (id: string, destino: Actor) => void;
+  setInboxCuit: (c: string) => void;
+  setClient: (cuit: string, razon: string, sucursal: number) => void;
+  upsertActor: (a: Actor) => void;
+  removeActor: (id: string) => void;
+  upsertCamion: (c: Camion) => void;
+  emitir: (partial: Omit<CpeDoc, "id" | "nroCtg" | "nroCpe" | "nroOrden" | "status" | "createdAt" | "vence" | "pesoBrutoDestino" | "pesoTaraDestino" | "sucursal" | "tipoCpe">) => CpeDoc;
+  arribo: (id: string, bruto: number, tara: number, obs?: string) => void;
+  confirmar: (id: string) => void;
+  desviar: (id: string, dest: Pick<CpeDoc, "cuitDestino" | "cuitDestinatario" | "destinoProv" | "destinoLoc" | "destinoPlanta" | "destinoCampo">) => void;
   anular: (id: string, motivo: string) => void;
+  rechazar: (id: string, motivo: string) => void;
+  regresoOrigen: (id: string) => void;
 };
 
-const KEY = "ag_cpe_v4";
+const KEY = "ag_cpe_v5";
 
 function load(): Partial<State> {
   if (typeof window === "undefined") return {};
@@ -53,105 +44,127 @@ function load(): Partial<State> {
   }
 }
 
-function persist(s: Pick<State, "demo" | "clientCuit" | "clientRazon" | "cosecha" | "viajes" | "role">) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(KEY, JSON.stringify(s));
+function snap(s: State) {
+  const { demo, inboxCuit, clientCuit, clientRazon, sucursal, ultimoOrden, actores, camiones, docs } = s;
+  if (typeof window !== "undefined") {
+    localStorage.setItem(KEY, JSON.stringify({ demo, inboxCuit, clientCuit, clientRazon, sucursal, ultimoOrden, actores, camiones, docs }));
+  }
 }
 
-function nro(prefix: number, len: number) {
-  const n = String(prefix + Math.floor(Math.random() * 8000) + Date.now() % 1000);
-  return n.slice(-len).padStart(len, "0");
+function ctg() {
+  return "94" + String(1228000000 + (Date.now() % 900000)).slice(-10);
 }
 
 const saved = typeof window !== "undefined" ? load() : {};
+const seedDocs = seedCpes();
 
 export const useCpe = create<State>((set, get) => ({
   demo: saved.demo ?? true,
   view: "dashboard",
-  role: saved.role ?? "productor",
+  inboxCuit: saved.inboxCuit ?? "",
   clientCuit: saved.clientCuit ?? "",
   clientRazon: saved.clientRazon ?? "",
-  cosecha: saved.cosecha ?? "2025/2026",
-  viajes: saved.viajes?.length ? saved.viajes : seedViajes(),
+  sucursal: saved.sucursal ?? 1,
+  ultimoOrden: saved.ultimoOrden ?? Math.max(...seedDocs.map((d) => d.nroOrden), 821),
+  actores: saved.actores?.length ? saved.actores : SEED_ACTORES,
+  camiones: saved.camiones?.length ? saved.camiones : SEED_CAMIONES,
+  docs: saved.docs?.length ? saved.docs : seedDocs,
   lastError: "",
   setView: (view) => set({ view }),
-  setRole: (role) => {
-    set({ role });
-    persist(get());
+  setInboxCuit: (inboxCuit) => {
+    set({ inboxCuit: cleanCuit(inboxCuit) });
+    snap(get());
   },
   setDemo: (demo) => {
-    set({ demo, viajes: demo ? seedViajes() : get().viajes.filter((v) => !v.id.startsWith("v-")) });
-    persist(get());
+    if (demo) {
+      set({ demo, docs: seedCpes(), actores: SEED_ACTORES, camiones: SEED_CAMIONES });
+    } else {
+      set({ demo, docs: get().docs.filter((d) => !d.id.startsWith("cpe-")) });
+    }
+    snap(get());
   },
-  setClient: (clientCuit, clientRazon) => {
-    set({ clientCuit, clientRazon });
-    persist(get());
+  setClient: (clientCuit, clientRazon, sucursal) => {
+    set({ clientCuit: cleanCuit(clientCuit), clientRazon, sucursal: sucursal || 1 });
+    snap(get());
   },
-  setCosecha: (cosecha) => {
-    set({ cosecha });
-    persist(get());
+  upsertActor: (a) => {
+    const actores = get().actores.some((x) => x.id === a.id)
+      ? get().actores.map((x) => (x.id === a.id ? a : x))
+      : [a, ...get().actores];
+    set({ actores });
+    snap(get());
   },
-  addCtg: (input) => {
-    const v: Viaje = {
-      ...input,
-      id: `ctg-${Date.now()}`,
-      kind: "CTG",
-      nroCtg: "94" + nro(1228000000, 10),
-      nroCpe: null,
-      status: "activa",
-      createdAt: new Date().toISOString().slice(0, 10),
-      pesoConfirmado: null,
-    };
-    set({ viajes: [v, ...get().viajes] });
-    persist(get());
-    return v;
+  removeActor: (id) => {
+    set({ actores: get().actores.filter((a) => a.id !== id) });
+    snap(get());
   },
-  addCpe: (input) => {
-    const ctg = input.nroCtg || "94" + nro(1228000000, 10);
-    const v: Viaje = {
-      ...input,
+  upsertCamion: (c) => {
+    const camiones = get().camiones.some((x) => x.id === c.id)
+      ? get().camiones.map((x) => (x.id === c.id ? c : x))
+      : [c, ...get().camiones];
+    set({ camiones });
+    snap(get());
+  },
+  emitir: (partial) => {
+    const orden = get().ultimoOrden + 1;
+    const suc = get().sucursal;
+    const solicitante = cleanCuit(get().clientCuit) || partial.cuitSolicitante;
+    const doc: CpeDoc = {
+      ...partial,
       id: `cpe-${Date.now()}`,
-      kind: "CPE",
-      nroCtg: ctg,
-      nroCpe: "00001-" + nro(800, 8),
+      tipoCpe: 74,
+      sucursal: suc,
+      nroOrden: orden,
+      nroCtg: ctg(),
+      nroCpe: `${String(suc).padStart(5, "0")}-${String(orden).padStart(8, "0")}`,
       status: "en_viaje",
+      cuitSolicitante: solicitante,
       createdAt: new Date().toISOString().slice(0, 10),
-      pesoConfirmado: null,
+      vence: new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10),
+      pesoBrutoDestino: null,
+      pesoTaraDestino: null,
     };
-    set({ viajes: [v, ...get().viajes] });
-    persist(get());
-    return v;
+    set({ docs: [doc, ...get().docs], ultimoOrden: orden });
+    snap(get());
+    return doc;
   },
-  confirmArribo: (id, peso, obs) => {
+  arribo: (id, bruto, tara, obs) => {
     set({
-      viajes: get().viajes.map((v) =>
-        v.id === id ? { ...v, status: "confirmada" as DocStatus, pesoConfirmado: peso, obs } : v,
+      docs: get().docs.map((d) =>
+        d.id === id
+          ? { ...d, status: "arribada" as CpeStatus, pesoBrutoDestino: bruto, pesoTaraDestino: tara, observaciones: obs || d.observaciones }
+          : d,
       ),
     });
-    persist(get());
+    snap(get());
   },
-  desviar: (id, destino) => {
+  confirmar: (id) => {
+    set({ docs: get().docs.map((d) => (d.id === id ? { ...d, status: "confirmada" as CpeStatus } : d)) });
+    snap(get());
+  },
+  desviar: (id, dest) => {
     set({
-      viajes: get().viajes.map((v) =>
-        v.id === id
-          ? {
-              ...v,
-              status: "desviada" as DocStatus,
-              destinatario: destino,
-              destino: destino.planta || destino.localidad,
-              plantaDestino: destino.planta || "",
-            }
-          : v,
-      ),
+      docs: get().docs.map((d) => (d.id === id ? { ...d, status: "desviada" as CpeStatus, ...dest } : d)),
     });
-    persist(get());
+    snap(get());
   },
   anular: (id, motivo) => {
-    set({
-      viajes: get().viajes.map((v) => (v.id === id ? { ...v, status: "anulada" as DocStatus, obs: motivo } : v)),
-    });
-    persist(get());
+    set({ docs: get().docs.map((d) => (d.id === id ? { ...d, status: "anulada" as CpeStatus, observaciones: motivo } : d)) });
+    snap(get());
+  },
+  rechazar: (id, motivo) => {
+    set({ docs: get().docs.map((d) => (d.id === id ? { ...d, status: "rechazada" as CpeStatus, observaciones: motivo } : d)) });
+    snap(get());
+  },
+  regresoOrigen: (id) => {
+    set({ docs: get().docs.map((d) => (d.id === id ? { ...d, status: "regreso_origen" as CpeStatus } : d)) });
+    snap(get());
   },
 }));
 
-export const CATALOG = { PRODUCTORES, DESTINOS, TRANSPORTES, CORREDORES };
+export function actorByCuit(actores: Actor[], cuit: string) {
+  const c = cleanCuit(cuit);
+  return actores.find((a) => cleanCuit(a.cuit) === c);
+}
+
+export { pesoNeto };

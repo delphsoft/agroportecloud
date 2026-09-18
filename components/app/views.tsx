@@ -1,223 +1,224 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { DESTINOS } from "@/lib/demo";
-import { useCpe } from "@/lib/store";
-import type { DocStatus, Viaje } from "@/lib/demo";
+import { granoLabel, locLabel } from "@/lib/catalog";
+import { actorByCuit, pesoNeto, useCpe } from "@/lib/store";
+import { STATUS_LABEL, type CpeDoc, type CpeStatus } from "@/lib/types";
 
-const TONE: Record<DocStatus, "ok" | "warn" | "brand" | "neutral"> = {
-  pendiente: "warn",
-  activa: "brand",
+const TONE: Record<CpeStatus, "ok" | "warn" | "brand" | "neutral"> = {
+  borrador: "neutral",
+  autorizada: "brand",
   en_viaje: "brand",
+  arribada: "warn",
   confirmada: "ok",
   desviada: "warn",
+  regreso_origen: "warn",
   anulada: "neutral",
-  vencida: "warn",
+  rechazada: "neutral",
 };
 
-export function statusLabel(s: DocStatus) {
-  return (
-    {
-      pendiente: "Pendiente",
-      activa: "Activa",
-      en_viaje: "En viaje",
-      confirmada: "Confirmada",
-      desviada: "Desviada",
-      anulada: "Anulada",
-      vencida: "Vencida",
-    } as const
-  )[s];
-}
-
 export function DashboardView() {
-  const viajes = useCpe((s) => s.viajes);
+  const docs = useCpe((s) => s.docs);
   const setView = useCpe((s) => s.setView);
-  const activos = viajes.filter((v) => v.status === "en_viaje" || v.status === "activa");
-  const tn = viajes.reduce((s, v) => s + v.pesoNeto, 0) / 1000;
-  const conf = viajes.filter((v) => v.status === "confirmada").length;
-  const pct = viajes.length ? Math.round((conf / viajes.length) * 100) : 0;
+  const sucursal = useCpe((s) => s.sucursal);
+  const ultimoOrden = useCpe((s) => s.ultimoOrden);
+  const curso = docs.filter((d) => ["autorizada", "en_viaje", "arribada", "desviada"].includes(d.status));
+  const tn = docs.reduce((s, d) => s + pesoNeto(d.pesoBruto, d.pesoTara), 0) / 1000;
+  const conf = docs.filter((d) => d.status === "confirmada").length;
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="En curso" value={String(activos.length)} sub="CTG + CPE activas" />
-        <Kpi label="CPE emitidas" value={String(viajes.filter((v) => v.kind === "CPE").length)} sub="total" />
-        <Kpi label="Toneladas" value={tn.toFixed(1)} sub="peso neto acum." />
-        <Kpi label="Confirmadas" value={`${pct}%`} sub={`${conf} con arribo`} />
+        <Kpi label="En circuito" value={String(curso.length)} sub="viaje / arribo / desvío" />
+        <Kpi label="CPE" value={String(docs.length)} sub={`sucursal ${sucursal} · orden ${ultimoOrden}`} />
+        <Kpi label="Toneladas" value={tn.toFixed(1)} sub="neto origen" />
+        <Kpi label="Confirmadas" value={String(conf)} sub="cierre definitivo" />
       </div>
-      <div className="flex gap-2">
-        <Button onClick={() => setView("cpe")}>Nueva CPE</Button>
-        <Button variant="outline" onClick={() => setView("ctg")}>
-          Nueva CTG
-        </Button>
-      </div>
-      <Card title="Últimos viajes">
-        <Tabla viajes={viajes.slice(0, 8)} compact />
+      <Button onClick={() => setView("cpe")}>Nueva CPE automotor</Button>
+      <Card title="Últimas cartas de porte">
+        <Tabla docs={docs.slice(0, 8)} />
       </Card>
     </div>
   );
 }
 
 export function HistorialView() {
-  const viajes = useCpe((s) => s.viajes);
-  const confirmArribo = useCpe((s) => s.confirmArribo);
-  const desviar = useCpe((s) => s.desviar);
-  const anular = useCpe((s) => s.anular);
+  const docs = useCpe((s) => s.docs);
   const [q, setQ] = useState("");
-  const [kind, setKind] = useState("all");
-  const [open, setOpen] = useState<Viaje | null>(null);
-  const [peso, setPeso] = useState("");
-  const [obs, setObs] = useState("");
-  const rows = viajes.filter((v) => {
-    if (kind !== "all" && v.kind !== kind) return false;
-    const hay = `${v.nroCtg} ${v.nroCpe} ${v.especie} ${v.remitente.razon} ${v.patente}`.toLowerCase();
+  const [st, setSt] = useState("all");
+  const [open, setOpen] = useState<CpeDoc | null>(null);
+  const rows = docs.filter((d) => {
+    if (st !== "all" && d.status !== st) return false;
+    const hay = `${d.nroCtg} ${d.nroCpe} ${d.dominio} ${d.cuitSolicitante} ${granoLabel(d.codGrano)}`.toLowerCase();
     return hay.includes(q.toLowerCase());
   });
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
-        <Input placeholder="Buscar CTG, CPE, patente…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs" />
-        <Select value={kind} onChange={(e) => setKind(e.target.value)}>
-          <option value="all">Todos</option>
-          <option value="CTG">CTG</option>
-          <option value="CPE">CPE</option>
+        <Input className="max-w-xs" placeholder="CTG, CPE, dominio, CUIT…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Select value={st} onChange={(e) => setSt(e.target.value)}>
+          <option value="all">Todos los estados</option>
+          {Object.entries(STATUS_LABEL).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
         </Select>
       </div>
       <Card>
-        <Tabla
-          viajes={rows}
-          onOpen={(v) => {
-            setOpen(v);
-            setPeso(String(v.pesoNeto));
-            setObs(v.obs);
-          }}
-        />
+        <Tabla docs={rows} onOpen={setOpen} />
       </Card>
-      <Dialog open={!!open} onOpenChange={() => setOpen(null)}>
-        <DialogContent title={open ? `${open.kind} ${open.nroCpe || open.nroCtg}` : ""}>
-          {open ? (
-            <div className="space-y-3 text-sm">
-              <p>
-                {open.especie} {open.cosecha} · {open.pesoNeto.toLocaleString("es-AR")} kg
-              </p>
-              <p className="text-muted-fg">
-                {open.origen} → {open.destino}
-              </p>
-              <p className="text-muted-fg">
-                {open.patente} · {open.chofer} · CTG {open.nroCtg}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  className="text-xs font-semibold text-primary underline"
-                  href={`https://wa.me/?text=${encodeURIComponent(`CTG ${open.nroCtg} · ${open.especie} · ${open.patente} · destino ${open.destino}`)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  WhatsApp al chofer
-                </a>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-primary underline"
-                  onClick={() => window.print()}
-                >
-                  Imprimir
-                </button>
-              </div>
-              {open.status === "en_viaje" || open.status === "activa" ? (
-                <>
-                  <Input inputMode="numeric" value={peso} onChange={(e) => setPeso(e.target.value)} placeholder="Peso neto en destino" />
-                  <Input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observaciones" />
-                  <Button
-                    onClick={() => {
-                      confirmArribo(open.id, Number(peso) || open.pesoNeto, obs);
-                      setOpen(null);
-                    }}
-                  >
-                    Confirmar arribo
-                  </Button>
-                  <Select
-                    onChange={(e) => {
-                      const d = DESTINOS.find((x) => x.id === e.target.value);
-                      if (d) {
-                        desviar(open.id, d);
-                        setOpen(null);
-                      }
-                    }}
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Desviar destino…
-                    </option>
-                    {DESTINOS.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.razon}
-                      </option>
-                    ))}
-                  </Select>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      anular(open.id, obs || "Anulada en demo");
-                      setOpen(null);
-                    }}
-                  >
-                    Anular
-                  </Button>
-                </>
-              ) : (
-                <Badge tone={TONE[open.status]}>{statusLabel(open.status)}</Badge>
-              )}
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <ViajeDialog doc={open} onClose={() => setOpen(null)} />
     </div>
   );
 }
 
-function Tabla({
-  viajes,
-  onOpen,
-  compact,
-}: {
-  viajes: Viaje[];
-  onOpen?: (v: Viaje) => void;
-  compact?: boolean;
-}) {
-  if (!viajes.length) return <p className="p-6 text-sm text-muted-fg">No hay viajes.</p>;
+export function ViajeDialog({ doc, onClose }: { doc: CpeDoc | null; onClose: () => void }) {
+  const arribo = useCpe((s) => s.arribo);
+  const confirmar = useCpe((s) => s.confirmar);
+  const anular = useCpe((s) => s.anular);
+  const rechazar = useCpe((s) => s.rechazar);
+  const regresoOrigen = useCpe((s) => s.regresoOrigen);
+  const desviar = useCpe((s) => s.desviar);
+  const actores = useCpe((s) => s.actores);
+  const [bruto, setBruto] = useState("");
+  const [tara, setTara] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const acopios = actores.filter((a) => a.kind === "acopio");
+  if (!doc) return null;
+  const netoO = pesoNeto(doc.pesoBruto, doc.pesoTara);
+  const netoD = doc.pesoBrutoDestino != null ? pesoNeto(doc.pesoBrutoDestino, doc.pesoTaraDestino || 0) : null;
+  const merma = netoD != null ? netoO - netoD : null;
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent title={`CPE ${doc.nroCpe}`}>
+        <div className="max-h-[70vh] space-y-3 overflow-y-auto text-sm">
+          <p className="font-mono text-xs">CTG {doc.nroCtg} · tipo {doc.tipoCpe} · suc {doc.sucursal} · orden {doc.nroOrden}</p>
+          <p>
+            {granoLabel(doc.codGrano)} {doc.cosecha} · {netoO.toLocaleString("es-AR")} kg neto
+          </p>
+          <p className="text-muted-fg">
+            {locLabel(doc.origenLoc)} → {locLabel(doc.destinoLoc)} planta {doc.destinoPlanta || "campo"}
+          </p>
+          <p className="text-muted-fg">
+            {doc.dominio} {doc.acoplado && `+ ${doc.acoplado}`} · chofer {doc.cuitChofer}
+          </p>
+          {merma != null ? (
+            <p className={merma > 0 ? "text-warn" : "text-ok"}>
+              Destino {netoD?.toLocaleString("es-AR")} kg · merma {merma.toLocaleString("es-AR")} kg
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <a className="text-xs font-semibold text-primary underline" href={`/constancia/${doc.id}`} target="_blank">
+              Constancia / QR
+            </a>
+            <a
+              className="text-xs font-semibold text-primary underline"
+              href={`https://wa.me/?text=${encodeURIComponent(`CPE ${doc.nroCpe} CTG ${doc.nroCtg} ${granoLabel(doc.codGrano)} ${doc.dominio} destino planta ${doc.destinoPlanta}`)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              WhatsApp
+            </a>
+          </div>
+          {["en_viaje", "autorizada", "desviada"].includes(doc.status) ? (
+            <>
+              <p className="text-xs font-semibold">Confirmar arribo (bruto y tara destino)</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Input placeholder="Bruto destino" value={bruto} onChange={(e) => setBruto(e.target.value)} />
+                <Input placeholder="Tara destino" value={tara} onChange={(e) => setTara(e.target.value)} />
+              </div>
+              <Button
+                onClick={() => {
+                  arribo(doc.id, Number(bruto) || doc.pesoBruto, Number(tara) || doc.pesoTara);
+                  onClose();
+                }}
+              >
+                Registrar arribo
+              </Button>
+              <Select
+                defaultValue=""
+                onChange={(e) => {
+                  const a = acopios.find((x) => x.cuit === e.target.value);
+                  if (!a) return;
+                  desviar(doc.id, {
+                    cuitDestino: a.cuit,
+                    cuitDestinatario: a.cuit,
+                    destinoProv: a.provincia,
+                    destinoLoc: a.localidad,
+                    destinoPlanta: a.planta ?? null,
+                    destinoCampo: false,
+                  });
+                  onClose();
+                }}
+              >
+                <option value="" disabled>
+                  Desviar a otra planta…
+                </option>
+                {acopios.map((a) => (
+                  <option key={a.id} value={a.cuit}>
+                    {a.razon} · planta {a.planta}
+                  </option>
+                ))}
+              </Select>
+              <Button variant="outline" onClick={() => { regresoOrigen(doc.id); onClose(); }}>
+                Regreso a origen
+              </Button>
+            </>
+          ) : null}
+          {doc.status === "arribada" ? (
+            <Button onClick={() => { confirmar(doc.id); onClose(); }}>Confirmación definitiva</Button>
+          ) : null}
+          <Input placeholder="Motivo anulación / rechazo" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { anular(doc.id, motivo || "Anulada"); onClose(); }}>
+              Anular
+            </Button>
+            <Button variant="outline" onClick={() => { rechazar(doc.id, motivo || "Rechazo planta"); onClose(); }}>
+              Rechazar
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Tabla({ docs, onOpen }: { docs: CpeDoc[]; onOpen?: (d: CpeDoc) => void }) {
+  const actores = useCpe((s) => s.actores);
+  if (!docs.length) return <p className="p-6 text-sm text-muted-fg">Sin CPE.</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs text-muted-fg">
-            <th className="px-3 py-2">Tipo</th>
-            <th className="px-3 py-2">Número</th>
+            <th className="px-3 py-2">CPE / CTG</th>
             <th className="px-3 py-2">Grano</th>
-            {!compact && <th className="px-3 py-2">Patente</th>}
-            <th className="px-3 py-2">Kg</th>
+            <th className="px-3 py-2">Kg neto</th>
+            <th className="px-3 py-2">Destino</th>
             <th className="px-3 py-2">Estado</th>
           </tr>
         </thead>
         <tbody>
-          {viajes.map((v) => (
-            <tr key={v.id} className="border-t border-border">
-              <td className="px-3 py-2">{v.kind}</td>
+          {docs.map((d) => (
+            <tr key={d.id} className="border-t border-border">
               <td className="px-3 py-2 font-mono text-xs">
-                <button type="button" className="text-primary" onClick={() => onOpen?.(v)}>
-                  {v.nroCpe || v.nroCtg}
+                <button type="button" className="text-primary" onClick={() => onOpen?.(d)}>
+                  {d.nroCpe}
                 </button>
+                <div className="text-[10px] text-muted-fg">{d.nroCtg}</div>
               </td>
               <td className="px-3 py-2">
-                {v.especie}
-                <div className="text-xs text-muted-fg">{v.remitente.razon}</div>
+                {granoLabel(d.codGrano)}
+                <div className="text-xs text-muted-fg">{actorByCuit(actores, d.cuitSolicitante)?.razon}</div>
               </td>
-              {!compact && <td className="px-3 py-2">{v.patente}</td>}
-              <td className="px-3 py-2 tabular-nums">{v.pesoNeto.toLocaleString("es-AR")}</td>
+              <td className="px-3 py-2 tabular-nums">{pesoNeto(d.pesoBruto, d.pesoTara).toLocaleString("es-AR")}</td>
+              <td className="px-3 py-2 text-xs">{locLabel(d.destinoLoc)}</td>
               <td className="px-3 py-2">
-                <Badge tone={TONE[v.status]}>{statusLabel(v.status)}</Badge>
+                <Badge tone={TONE[d.status]}>{STATUS_LABEL[d.status]}</Badge>
               </td>
             </tr>
           ))}
@@ -235,7 +236,6 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
     </div>
   );
 }
-
 function Kpi({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
